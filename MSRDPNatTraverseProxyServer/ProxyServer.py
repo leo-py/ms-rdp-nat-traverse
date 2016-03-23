@@ -13,20 +13,90 @@
 import os
 import sys
 import subprocess
-from json import loads, dumps
+from RegisteredMachine import RegisteredMachine
+from json import loads, dumps, load, dump
 import socket
 from threading import Thread
 import logging
 
 """
-全局的日志实例
+全局变量
 """
 LOG = logging.getLogger()
 
+# 存放注册的机器信息,方便用于查找等操作
+# 键取值为machine_id, 从而确保唯一性;
+# 值为RegisteredMachine类型
+REGISTERED_MACHINES = dict()
 
 """
-与代理服务器结合的函数
+相关函数:处理注册机器信息等的函数
 """
+
+
+def append_machine(machine):
+    """
+    该函数用于添加一个新的注册机器
+    :param machine: 该机器的详细信息参数
+    :return: bool类型
+    """
+    global REGISTERED_MACHINES
+    if isinstance(machine, RegisteredMachine):
+        if machine.machine_id in REGISTERED_MACHINES.keys():
+            LOG.info('无法添加相同ID的机器信息: {}'.format(str(machine)))
+            return False
+        else:
+            REGISTERED_MACHINES[machine.machine_id] = machine.instance
+            return True
+    else:
+        return False
+
+
+def remove_machine(machine_id):
+    """
+    从已注册的表中删除一个已经注册的机器信息
+    :param machine_id: 机器的ID
+    :return: True/False
+    """
+    global REGISTERED_MACHINES
+    if isinstance(machine_id, int):
+        if machine_id not in REGISTERED_MACHINES.keys():
+            LOG.info("尝试删除一个不存在的机器信息: {}".format(machine_id))
+            return False
+        else:
+            REGISTERED_MACHINES.pop(machine_id)
+            return True
+    else:
+        return False
+
+
+def save_machines():
+    """
+    保存所有的已成功注册的机器信息到磁盘上
+    :return: True/False
+    """
+    with open('machines.json', 'w') as w_file:
+        try:
+            dump(REGISTERED_MACHINES, w_file)
+            return True
+        except Exception as err:
+            LOG.error(str(err))
+            return False
+
+
+def read_machines():
+    """
+    从磁盘的配置文件中读取已经存放的machines信息
+    :return: True/False
+    """
+    global REGISTERED_MACHINES
+    if os.path.exists('machines.json'):
+        try:
+            REGISTERED_MACHINES = load('machines.json')
+            return True
+        except Exception as err:
+            LOG.error(str(err))
+            return False
 
 
 def generate_machine_id():
@@ -67,10 +137,6 @@ def get_remote_control_request():
     :return: True/False
     """
     return True
-
-"""
-下面几个handle函数用来处理不同请求功能. 这些方法将会返回json字符串作为回复内容
-"""
 
 
 def build_response_str(content):
