@@ -320,14 +320,19 @@ namespace MSRDPNatTraverseClient
             public int MachineId;
         }
 
+        class Response
+        {
+            public bool isResultEffective;   // 表示结果能否使用
+            public object result;            // 返回的结果
+        }
+
         /// <summary>
         /// 请求获取MachineID，服务器会在收到请求后为该请求机器分配一个唯一的ID
         /// </summary>
-        /// <param name="machineId">存储返回的ID</param>
         /// <returns></returns>
-        private bool RequestMachineId(out int machineId)
+        private async Task<Response> RequestMachineIdAsync()
         {
-            machineId = 10000;
+            int machineId = 10000;
 
             // 要发送的请求消息
             var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
@@ -336,15 +341,15 @@ namespace MSRDPNatTraverseClient
                 content = "machine_id"
             }, Formatting.Indented);
 
-            var resp = ClientSendMessage(sendMsg);
+            var resp = await ClientSendMessageAsync(sendMsg);
 
             // 返回的消息是一个json格式的字符串
             var obj = JsonConvert.DeserializeObject(resp);
 
-            return false;
+            return new Response() { isResultEffective = false, result = resp };
         }
 
-        private bool UploadMachineInfoToProxyServer(LocalMachine.LocalMachine machine)
+        private async Task<Response> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
         {
             // 构建要发送的消息
             var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
@@ -354,83 +359,13 @@ namespace MSRDPNatTraverseClient
             }, Formatting.Indented);
 
             // 向服务器发送消息
-            var resp = ClientSendMessage(sendMsg);
+            var resp = await ClientSendMessageAsync(sendMsg);
 
-            return true;
+            return new Response() { isResultEffective = false, result = resp };
         }
         #endregion
 
         #region TCP通信相关函数
-        /// <summary>
-        /// 本地监听端口
-        /// </summary>
-        private readonly int localServerListenPort = 19930;
-        private readonly string localServerListenIP = "0.0.0.0";
-
-        /// <summary>
-        /// 在全局范围引用。
-        /// </summary>
-        private TcpListener localListener = null;
-
-        /// <summary>
-        /// 在本地设置一个监听服务，在特定端口上监听来自远程代理服务器发送过来的请求信息；
-        /// 并且根据请求信息，完成相关的工作。
-        /// </summary>
-        private void StartLocalServer()
-        {
-            localListener = new TcpListener(IPAddress.Parse(localServerListenIP), localServerListenPort);
-
-            // 新建一个线程专门用于监听
-            Thread localListenerThread = new Thread(LocalListenerServerThread);
-
-            // 启动监听和处理线程
-            localListenerThread.Start();
-        }
-
-        /// <summary>
-        /// 本地监听进程。
-        /// </summary>
-        private void LocalListenerServerThread()
-        {
-            if (localListener != null)
-            {
-                localListener.Start();
-
-                // 存放接收的数据buffer
-                byte[] recvBuffer = null;
-
-                // 接收消息字节大小
-                int msgSize = 0;
-
-                while (true)
-                {
-                    var client = localListener.AcceptTcpClient();
-                    var inStream = client.GetStream();
-                    recvBuffer = new byte[client.ReceiveBufferSize];
-
-                    try
-                    {
-                        lock (inStream)
-                        {
-                            msgSize = inStream.Read(recvBuffer, 0, recvBuffer.Length);
-                        }
-                        if (msgSize == 0)
-                        {
-                            return;
-                        }
-                        string recvMsg = Encoding.Default.GetString(recvBuffer);
-
-                        this.Invoke(new Action(() =>
-                        {
-                            machineDescriptionTextBox.Text += recvMsg + "\n";
-                        }));
-                        client.Close();
-                    }
-                    catch { }
-                }
-            }
-        }
-
         /// <summary>
         /// 远程监听端口
         /// </summary>
@@ -438,41 +373,43 @@ namespace MSRDPNatTraverseClient
 
         /// <summary>
         /// TCP客户端
+        /// 更新：修改为支持异步调用的方法
         /// </summary>
         /// <param name="requestMsg"></param>
         /// <returns></returns>
-        private string ClientSendMessage(string requestMsg)
+        private async Task<string> ClientSendMessageAsync(string requestMsg)
         {
             TcpClient client = new TcpClient();
             IPAddress remoteIp = IPAddress.Parse(server.IPAdress);
             string response = "";
-
-            #region 客户端请求以及等待响应代码
-            try
+            await Task.Run(new Action(() =>
             {
-                client.Connect(remoteIp, remotePort);
+                #region 客户端请求以及等待响应代码
+                try
+                {
+                    client.Connect(remoteIp, remotePort);
 
-                // 获取发送流，然后发送消息
-                var stream = client.GetStream();
+                    // 获取发送流，然后发送消息
+                    var stream = client.GetStream();
 
-                byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
-                stream.Write(outBuffer, 0, outBuffer.Length);
-                //Thread sendThread = new Thread(ClientSendThread);
-                //sendThread.Start(client.SendBufferSize);
+                    byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
+                    stream.Write(outBuffer, 0, outBuffer.Length);
+                    //Thread sendThread = new Thread(ClientSendThread);
+                    //sendThread.Start(client.SendBufferSize);
 
-                // 延时等待响应结果。
-                Thread.Sleep(200);
-                byte[] inBuffer = new byte[1024];
-                stream.Read(inBuffer, 0, 1024);
-                response = Encoding.UTF8.GetString(inBuffer).Trim();
+                    // 延时等待响应结果。
+                    Thread.Sleep(200);
+                    byte[] inBuffer = new byte[1024];
+                    stream.Read(inBuffer, 0, 1024);
+                    response = Encoding.UTF8.GetString(inBuffer).Trim();
 
-                stream.Close();
-                client.Close();
-            }
-            catch
-            { }
-            #endregion
-
+                    stream.Close();
+                    client.Close();
+                }
+                catch
+                { }
+                #endregion
+            }));
             return response;
         }
         #endregion
