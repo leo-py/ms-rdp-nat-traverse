@@ -350,24 +350,86 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
+        /// 执行标准的协议请求，返回固定格式的应答。
+        /// </summary>
+        /// <param name="function"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private async Task<object> ExecuteProtocalRequest<T>(string function, object content)
+        {
+            // 构建消息
+            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
+            {
+                function = function,
+                content = content
+            }, Formatting.Indented);
+
+            // 发送消息，等待应答
+            var resp = await ClientSendMessageAsync(sendMsg);
+
+            // 判断并返回响应
+            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, T>>(resp);
+
+            if (responseDict.Count == 1 && responseDict.ContainsKey("response"))
+            {
+                return responseDict["response"];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 执行标准的协议请求，返回固定格式的应答。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="function"></param>
+        /// <param name="id"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private async Task<object> ExecuteProtocalRequest<T>(string function, int id, object content)
+        {
+            // 构建消息
+            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            {
+                function = function,
+                id = id,
+                content = content
+            }, Formatting.Indented);
+
+            // 发送消息，等待应答
+            var resp = await ClientSendMessageAsync(sendMsg);
+
+            // 判断并返回响应
+            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, T>>(resp);
+
+            if (responseDict != null && responseDict.Count == 1 && responseDict.ContainsKey("response"))
+            {
+                return responseDict["response"];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// 请求获取MachineID，服务器会在收到请求后为该请求机器分配一个唯一的ID
         /// </summary>
         /// <returns></returns>
         private async Task<Response> RequestMachineIdAsync()
         {
-            // 要发送的请求消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
+            var result = await ExecuteProtocalRequest<int>("get", "machine_id");
+
+            if (result != null)
             {
-                function = "get",
-                content = "machine_id"
-            }, Formatting.Indented);
-
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            // 返回的消息是一个json格式的字符串
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, int>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+                return new Response() { isResultEffective = true, Result = (int)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -377,19 +439,16 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<Response> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
         {
-            // 构建要发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
-            {   
-                function = "upload",
-                content = machine
-            }, Formatting.Indented);
+            var result = await ExecuteProtocalRequest<string>("upload", machine);
 
-            // 向服务器发送消息
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -401,20 +460,16 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<Response> RequestToBuildConnectionWithOnlineMachine(int localMachineId, int remoteMachineId)
         {
-            // 构建要发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            var result = await ExecuteProtocalRequest<string>("connect_remote", localMachineId, remoteMachineId);
+
+            if (result != null)
             {
-                function = "connect_remote",
-                id = localMachineId,
-                content = remoteMachineId
-            }, Formatting.Indented);
-
-            // 等待响应消息，再返回结果
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -424,20 +479,16 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<Response> GetPeeredRemoteMachineAddress(int remoteMachineId)
         {
-            // 构建发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            var result = await ExecuteProtocalRequest<string>("get", remoteMachineId, "remote_machine_address");
+
+            if (result != null)
             {
-                function = "get",
-                id = remoteMachineId,
-                content = "remote_machine_address"
-            }, Formatting.Indented);
-
-            // 等待响应消息，再返回结果
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -447,20 +498,16 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<Response> GetAvailableTunnelPort(int localMachineId)
         {
-            // 构建发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            var result = await ExecuteProtocalRequest<int>("get", localMachineId, "available_port");
+
+            if (result != null)
             {
-                function = "get",
-                id = localMachineId,
-                content = "available_port"
-            }, Formatting.Indented);
-
-            // 等待响应消息，再返回结果
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, int>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+                return new Response() { isResultEffective = true, Result = (int)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -470,20 +517,16 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<Response> QueryTunnelStatus(int localMachineId)
         {
-            // 构建发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            var result = await ExecuteProtocalRequest<string>("query", localMachineId, "tunnel_status");
+
+            if (result != null)
             {
-                function = "query",
-                id = localMachineId,
-                content = "tunnel_status"
-            }, Formatting.Indented);
-
-            // 等待响应消息，再返回结果
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -493,20 +536,16 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<Response> QueryRemoteControlRequest(int localMachineId)
         {
-            // 构建发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            var result = await ExecuteProtocalRequest<string>("query", localMachineId, "remote_control_request");
+
+            if (result != null)
             {
-                function = "query",
-                id = localMachineId,
-                content = "remote_control_request"
-            }, Formatting.Indented);
-
-            // 等待响应消息，再返回结果
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(resp);
-
-            return new Response() { isResultEffective = true, Result = responseDict["response"] };
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
         #endregion
 
