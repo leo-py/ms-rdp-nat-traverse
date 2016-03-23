@@ -909,6 +909,93 @@
   <data name="&gt;&gt;tabPageLocal.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
+  <data name="controlButton.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="controlButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>208, 232</value>
+  </data>
+  <data name="controlButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>90, 23</value>
+  </data>
+  <data name="controlButton.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="controlButton.Text" xml:space="preserve">
+    <value>连接</value>
+  </data>
+  <data name="&gt;&gt;controlButton.Name" xml:space="preserve">
+    <value>controlButton</value>
+  </data>
+  <data name="&gt;&gt;controlButton.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;controlButton.Parent" xml:space="preserve">
+    <value>tabPageRemote</value>
+  </data>
+  <data name="&gt;&gt;controlButton.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="upddateRemteMachineListButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 233</value>
+  </data>
+  <data name="upddateRemteMachineListButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>90, 23</value>
+  </data>
+  <data name="upddateRemteMachineListButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="upddateRemteMachineListButton.Text" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="&gt;&gt;upddateRemteMachineListButton.Name" xml:space="preserve">
+    <value>upddateRemteMachineListButton</value>
+  </data>
+  <data name="&gt;&gt;upddateRemteMachineListButton.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;upddateRemteMachineListButton.Parent" xml:space="preserve">
+    <value>tabPageRemote</value>
+  </data>
+  <data name="&gt;&gt;upddateRemteMachineListButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;listBox1.Name" xml:space="preserve">
+    <value>listBox1</value>
+  </data>
+  <data name="&gt;&gt;listBox1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ListBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;listBox1.Parent" xml:space="preserve">
+    <value>groupBoxOnlineMachine</value>
+  </data>
+  <data name="&gt;&gt;listBox1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="groupBoxOnlineMachine.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="groupBoxOnlineMachine.Size" type="System.Drawing.Size, System.Drawing">
+    <value>295, 222</value>
+  </data>
+  <data name="groupBoxOnlineMachine.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="groupBoxOnlineMachine.Text" xml:space="preserve">
+    <value>在线远程主机</value>
+  </data>
+  <data name="&gt;&gt;groupBoxOnlineMachine.Name" xml:space="preserve">
+    <value>groupBoxOnlineMachine</value>
+  </data>
+  <data name="&gt;&gt;groupBoxOnlineMachine.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;groupBoxOnlineMachine.Parent" xml:space="preserve">
+    <value>tabPageRemote</value>
+  </data>
+  <data name="&gt;&gt;groupBoxOnlineMachine.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
   <data name="tabPageRemote.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 26</value>
   </data>
@@ -968,6 +1055,36 @@
   </data>
   <data name="SaveLocalMachineToolStripMenuItem.Text" xml:space="preserve">
     <value>保存本机信息</value>
+  </data>
+  <data name="listBox1.ItemHeight" type="System.Int32, mscorlib">
+    <value>17</value>
+  </data>
+  <data name="listBox1.Items" xml:space="preserve">
+    <value>1. 10001    实验室主机 </value>
+  </data>
+  <data name="listBox1.Items1" xml:space="preserve">
+    <value>2. 10002    家里的笔记本电脑 </value>
+  </data>
+  <data name="listBox1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 22</value>
+  </data>
+  <data name="listBox1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>282, 187</value>
+  </data>
+  <data name="listBox1.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;listBox1.Name" xml:space="preserve">
+    <value>listBox1</value>
+  </data>
+  <data name="&gt;&gt;listBox1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ListBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;listBox1.Parent" xml:space="preserve">
+    <value>groupBoxOnlineMachine</value>
+  </data>
+  <data name="&gt;&gt;listBox1.ZOrder" xml:space="preserve">
+    <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
