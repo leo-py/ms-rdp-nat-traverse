@@ -73,44 +73,18 @@ namespace MSRDPNatTraverseClient
             ShowAboutDialog();
         }
 
-        private void EditLocalMachineToolStripMenuItem_Click(object sender, EventArgs e)
+        private void EditLocalMachineToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
             EditLocalMachine();
+        }
+
+        private void SaveLocalMachineToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveLocalMachine();
         }
         #endregion
 
         #region event_handlers for program control region
-        private void machienInfoTextBox_DoubleClick(object sender, EventArgs e)
-        {
-            TextBox tb = sender as TextBox;
-            if (tb != null)
-            {
-                tb.ReadOnly = !tb.ReadOnly;
-
-                if (tb.ReadOnly == true)
-                {
-                    // 保存信息
-                    switch (tb.Tag.ToString())
-                    {
-                        case "name":
-                            localMachine.Name = tb.Text;
-                            break;
-                        case "id":
-                            localMachine.ID = int.Parse(tb.Text);
-                            break;
-                        case "rdpPort":
-                            localMachine.RDPPort = int.Parse(tb.Text);
-                            break;
-                        case "desc":
-                            localMachine.Description = tb.Text;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-
         private void autoStartupCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             var cb = sender as CheckBox;
@@ -144,6 +118,23 @@ namespace MSRDPNatTraverseClient
             Quit();
         }
 
+
+        private void machineInfoTextBox_ReadOnlyChanged(object sender, EventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb != null)
+            {
+                if (tb.ReadOnly)
+                {
+                    tb.ForeColor = Color.Black;
+                }
+                else
+                {
+                    tb.ForeColor = Color.Blue;
+                }
+            }
+        }
+
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // 关闭打开的隧道
@@ -158,7 +149,26 @@ namespace MSRDPNatTraverseClient
         #region proxy functions: do what the handlers what to
         private void EditLocalMachine()
         {
-            MessageBox.Show("Good");
+            // 将编辑窗口改为可写状态
+            machineNameTextBox.ReadOnly = false;
+            machineDescriptionTextBox.ReadOnly = false;
+            RDPPortTextBox.ReadOnly = false;
+        }
+
+        private void SaveLocalMachine()
+        {
+            // 重置为只读状态
+            machineNameTextBox.ReadOnly = true;
+            machineDescriptionTextBox.ReadOnly = true;
+            RDPPortTextBox.ReadOnly = true;
+
+            // 保存所有信息
+            localMachine.Name = machineNameTextBox.Text;
+            localMachine.Description = machineDescriptionTextBox.Text;
+            localMachine.RDPPort = int.Parse(RDPPortTextBox.Text);
+
+            // 告诉配置信息类
+            programConfig.Machine = localMachine;
         }
 
         private void EditServer()

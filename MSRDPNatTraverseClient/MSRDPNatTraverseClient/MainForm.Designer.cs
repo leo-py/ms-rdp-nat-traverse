@@ -115,12 +115,12 @@
             // 
             this.machineNameTextBox.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.machineNameTextBox, "machineNameTextBox");
-            this.machineNameTextBox.ForeColor = System.Drawing.Color.Blue;
+            this.machineNameTextBox.ForeColor = System.Drawing.Color.Black;
             this.machineNameTextBox.Name = "machineNameTextBox";
             this.machineNameTextBox.ReadOnly = true;
             this.machineNameTextBox.TabStop = false;
             this.machineNameTextBox.Tag = "name";
-            this.machineNameTextBox.DoubleClick += new System.EventHandler(this.machienInfoTextBox_DoubleClick);
+            this.machineNameTextBox.ReadOnlyChanged += new System.EventHandler(this.machineInfoTextBox_ReadOnlyChanged);
             // 
             // label3
             // 
@@ -131,23 +131,22 @@
             // 
             this.RDPPortTextBox.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.RDPPortTextBox, "RDPPortTextBox");
-            this.RDPPortTextBox.ForeColor = System.Drawing.Color.Blue;
+            this.RDPPortTextBox.ForeColor = System.Drawing.Color.Black;
             this.RDPPortTextBox.Name = "RDPPortTextBox";
             this.RDPPortTextBox.ReadOnly = true;
             this.RDPPortTextBox.TabStop = false;
             this.RDPPortTextBox.Tag = "rdpPort";
-            this.RDPPortTextBox.DoubleClick += new System.EventHandler(this.machienInfoTextBox_DoubleClick);
+            this.RDPPortTextBox.ReadOnlyChanged += new System.EventHandler(this.machineInfoTextBox_ReadOnlyChanged);
             // 
             // machineIDTextBox
             // 
             this.machineIDTextBox.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.machineIDTextBox, "machineIDTextBox");
-            this.machineIDTextBox.ForeColor = System.Drawing.Color.Blue;
+            this.machineIDTextBox.ForeColor = System.Drawing.Color.Black;
             this.machineIDTextBox.Name = "machineIDTextBox";
             this.machineIDTextBox.ReadOnly = true;
             this.machineIDTextBox.TabStop = false;
             this.machineIDTextBox.Tag = "id";
-            this.machineIDTextBox.DoubleClick += new System.EventHandler(this.machienInfoTextBox_DoubleClick);
             // 
             // label4
             // 
@@ -157,13 +156,13 @@
             // machineDescriptionTextBox
             // 
             this.machineDescriptionTextBox.BackColor = System.Drawing.Color.White;
-            this.machineDescriptionTextBox.ForeColor = System.Drawing.Color.Blue;
+            this.machineDescriptionTextBox.ForeColor = System.Drawing.Color.Black;
             resources.ApplyResources(this.machineDescriptionTextBox, "machineDescriptionTextBox");
             this.machineDescriptionTextBox.Name = "machineDescriptionTextBox";
             this.machineDescriptionTextBox.ReadOnly = true;
             this.machineDescriptionTextBox.TabStop = false;
             this.machineDescriptionTextBox.Tag = "desc";
-            this.machineDescriptionTextBox.DoubleClick += new System.EventHandler(this.machienInfoTextBox_DoubleClick);
+            this.machineDescriptionTextBox.ReadOnlyChanged += new System.EventHandler(this.machineInfoTextBox_ReadOnlyChanged);
             // 
             // label5
             // 
@@ -304,11 +303,13 @@
             // 
             this.EditLocalMachineToolStripMenuItem.Name = "EditLocalMachineToolStripMenuItem";
             resources.ApplyResources(this.EditLocalMachineToolStripMenuItem, "EditLocalMachineToolStripMenuItem");
+            this.EditLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.EditLocalMachineToolStripMenuItem_Click_1);
             // 
             // SaveLocalMachineToolStripMenuItem
             // 
             this.SaveLocalMachineToolStripMenuItem.Name = "SaveLocalMachineToolStripMenuItem";
             resources.ApplyResources(this.SaveLocalMachineToolStripMenuItem, "SaveLocalMachineToolStripMenuItem");
+            this.SaveLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.SaveLocalMachineToolStripMenuItem_Click);
             // 
             // MainForm
             // 
