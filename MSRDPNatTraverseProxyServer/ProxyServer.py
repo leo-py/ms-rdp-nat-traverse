@@ -147,6 +147,7 @@ def build_response_str(content):
     """
     response = dict()
     response['response'] = content
+    LOG.info('响应消息内容: {}'.format(dumps(response)))
     return dumps(response)
 
 
