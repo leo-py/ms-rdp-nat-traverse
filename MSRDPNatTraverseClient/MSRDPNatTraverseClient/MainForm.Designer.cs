@@ -35,7 +35,6 @@
             this.ChangeServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AboutProgramToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.machineNameTextBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.RDPPortTextBox = new System.Windows.Forms.TextBox();
@@ -57,10 +56,16 @@
             this.startButton = new System.Windows.Forms.Button();
             this.closeWithoutQuitCheckBox = new System.Windows.Forms.CheckBox();
             this.autoStartupCheckBox = new System.Windows.Forms.CheckBox();
+            this.tabControl = new System.Windows.Forms.TabControl();
+            this.tabPageLocal = new System.Windows.Forms.TabPage();
+            this.tabPageRemote = new System.Windows.Forms.TabPage();
+            this.EditLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SaveLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
-            this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            this.tabControl.SuspendLayout();
+            this.tabPageLocal.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -75,7 +80,9 @@
             // 
             this.服务器ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.EditServerToolStripMenuItem,
-            this.ChangeServerToolStripMenuItem});
+            this.ChangeServerToolStripMenuItem,
+            this.EditLocalMachineToolStripMenuItem,
+            this.SaveLocalMachineToolStripMenuItem});
             this.服务器ToolStripMenuItem.Name = "服务器ToolStripMenuItem";
             resources.ApplyResources(this.服务器ToolStripMenuItem, "服务器ToolStripMenuItem");
             // 
@@ -104,22 +111,9 @@
             resources.ApplyResources(this.AboutProgramToolStripMenuItem, "AboutProgramToolStripMenuItem");
             this.AboutProgramToolStripMenuItem.Click += new System.EventHandler(this.AboutProgramToolStripMenuItem_Click);
             // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.machineNameTextBox);
-            this.groupBox1.Controls.Add(this.label3);
-            this.groupBox1.Controls.Add(this.RDPPortTextBox);
-            this.groupBox1.Controls.Add(this.machineIDTextBox);
-            this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Controls.Add(this.machineDescriptionTextBox);
-            this.groupBox1.Controls.Add(this.label5);
-            this.groupBox1.Controls.Add(this.label1);
-            resources.ApplyResources(this.groupBox1, "groupBox1");
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.TabStop = false;
-            // 
             // machineNameTextBox
             // 
+            this.machineNameTextBox.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.machineNameTextBox, "machineNameTextBox");
             this.machineNameTextBox.ForeColor = System.Drawing.Color.Blue;
             this.machineNameTextBox.Name = "machineNameTextBox";
@@ -135,6 +129,7 @@
             // 
             // RDPPortTextBox
             // 
+            this.RDPPortTextBox.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.RDPPortTextBox, "RDPPortTextBox");
             this.RDPPortTextBox.ForeColor = System.Drawing.Color.Blue;
             this.RDPPortTextBox.Name = "RDPPortTextBox";
@@ -145,6 +140,7 @@
             // 
             // machineIDTextBox
             // 
+            this.machineIDTextBox.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.machineIDTextBox, "machineIDTextBox");
             this.machineIDTextBox.ForeColor = System.Drawing.Color.Blue;
             this.machineIDTextBox.Name = "machineIDTextBox";
@@ -276,14 +272,53 @@
             this.autoStartupCheckBox.UseVisualStyleBackColor = true;
             this.autoStartupCheckBox.CheckedChanged += new System.EventHandler(this.autoStartupCheckBox_CheckedChanged);
             // 
+            // tabControl
+            // 
+            this.tabControl.Controls.Add(this.tabPageLocal);
+            this.tabControl.Controls.Add(this.tabPageRemote);
+            resources.ApplyResources(this.tabControl, "tabControl");
+            this.tabControl.Name = "tabControl";
+            this.tabControl.SelectedIndex = 0;
+            // 
+            // tabPageLocal
+            // 
+            this.tabPageLocal.BackColor = System.Drawing.Color.White;
+            this.tabPageLocal.Controls.Add(this.machineDescriptionTextBox);
+            this.tabPageLocal.Controls.Add(this.label4);
+            this.tabPageLocal.Controls.Add(this.RDPPortTextBox);
+            this.tabPageLocal.Controls.Add(this.machineNameTextBox);
+            this.tabPageLocal.Controls.Add(this.machineIDTextBox);
+            this.tabPageLocal.Controls.Add(this.label3);
+            this.tabPageLocal.Controls.Add(this.label5);
+            this.tabPageLocal.Controls.Add(this.label1);
+            resources.ApplyResources(this.tabPageLocal, "tabPageLocal");
+            this.tabPageLocal.Name = "tabPageLocal";
+            // 
+            // tabPageRemote
+            // 
+            resources.ApplyResources(this.tabPageRemote, "tabPageRemote");
+            this.tabPageRemote.Name = "tabPageRemote";
+            this.tabPageRemote.UseVisualStyleBackColor = true;
+            // 
+            // EditLocalMachineToolStripMenuItem
+            // 
+            this.EditLocalMachineToolStripMenuItem.Name = "EditLocalMachineToolStripMenuItem";
+            resources.ApplyResources(this.EditLocalMachineToolStripMenuItem, "EditLocalMachineToolStripMenuItem");
+            // 
+            // SaveLocalMachineToolStripMenuItem
+            // 
+            this.SaveLocalMachineToolStripMenuItem.Name = "SaveLocalMachineToolStripMenuItem";
+            resources.ApplyResources(this.SaveLocalMachineToolStripMenuItem, "SaveLocalMachineToolStripMenuItem");
+            // 
             // MainForm
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.tabControl);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.menuStrip1);
+            this.ForeColor = System.Drawing.SystemColors.ControlText;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.HelpButton = true;
             this.MainMenuStrip = this.menuStrip1;
@@ -293,12 +328,13 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            this.tabControl.ResumeLayout(false);
+            this.tabPageLocal.ResumeLayout(false);
+            this.tabPageLocal.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -310,7 +346,6 @@
         private System.Windows.Forms.ToolStripMenuItem 服务器ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem EditServerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ChangeServerToolStripMenuItem;
-        private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label1;
@@ -334,6 +369,11 @@
         private System.Windows.Forms.TextBox serverNameTextBox;
         private System.Windows.Forms.TextBox machineNameTextBox;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TabControl tabControl;
+        private System.Windows.Forms.TabPage tabPageLocal;
+        private System.Windows.Forms.TabPage tabPageRemote;
+        private System.Windows.Forms.ToolStripMenuItem EditLocalMachineToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem SaveLocalMachineToolStripMenuItem;
     }
 }
 
