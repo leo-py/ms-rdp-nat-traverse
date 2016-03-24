@@ -51,7 +51,7 @@ namespace MSRDPNatTraverseClient
                 localMachine = new LocalMachine.LocalMachine();
                 server = new ProxyServer.ProxyServer();
                 programConfig = new Config.Config(autoStartupCheckBox.Checked,
-                    closeWithoutQuitCheckBox.Checked, localMachine, -1);
+                    closeWithoutQuitCheckBox.Checked, localMachine, -1, 9000);
             }
 
             // 显示这些信息
@@ -145,8 +145,10 @@ namespace MSRDPNatTraverseClient
                 }
                 else
                 {
-                    DisconnectRemoteMachine(remoteId);
-                    bt.Text = "连接";
+                    if (await DisconnectRemoteMachineAsync(remoteId))
+                    {
+                        bt.Text = "连接";
+                    }
                 }
             }
         }
@@ -407,8 +409,8 @@ namespace MSRDPNatTraverseClient
                 Debug.WriteLine("远程服务器已经收到消息，并向远程主机发送邀请");
 
                 // 第二步，等待远程主机建立隧道
-                int tryCount = 15;
-                while (await QueryRemoteControlRequestAsync(remoteId))
+                int tryCount = 10;
+                while (await QueryTunnelStatusAsync(remoteId))
                 {
                     Thread.Sleep(500);
                     if (tryCount-- == 0)
@@ -427,14 +429,23 @@ namespace MSRDPNatTraverseClient
             }
             else
             {
-                Debug.WriteLine("请求连接失败！");
+                Debug.WriteLine("请求连接失败");
                 return false;
             }
         }
 
-        private void DisconnectRemoteMachine(int remoteId)
+        /// <summary>
+        /// 断开与远程主机的连接
+        /// </summary>
+        /// <param name="remoteId"></param>
+        private async Task<bool> DisconnectRemoteMachineAsync(int remoteId)
         {
-
+            // 只需要告诉远程主机关闭隧道连接即可
+            // 具体方法：通过协议，修改远程主机的tunnel_port属性，
+            // 远程主机检查到该tunnel_status为false时，无论是否建立连接，都
+            // 会强制关闭隧道，关闭连接
+            bool result = await ResetTunnelPortRequestAsync(remoteId);
+            return result;
         }
 
         /// <summary>
@@ -446,60 +457,74 @@ namespace MSRDPNatTraverseClient
             while (true)
             {
                 // 只有在线，才会发送查询消息
-                if (machineIsOnline && !tunnelIsOpen)
+                if (machineIsOnline)
                 {
-                    if (await QueryRemoteControlRequestAsync(localMachine.ID))
+                    if (tunnelIsOpen)
                     {
-                        Debug.WriteLine("收到远程连接请求");
-
-                        // 根据协议要求，需要向服务器申请得到一个可用的代理隧道端口
-                        int port = await GetAvailableTunnelPortAsync(localMachine.ID);
-
-                        if (port != -1)
+                        // 但端口建立后，就轮询隧道状态，但隧道不存在后，就关闭当前的进程
+                        if (await QueryTunnelStatusAsync(localMachine.ID))
                         {
-                            Debug.WriteLine("获得隧道端口：" + port.ToString());
-
-                            //接下来会开始建立隧道
-                            SSHReverseTunnel.SSHReverseTunnel tunnel = new SSHReverseTunnel.SSHReverseTunnel(localMachine, server, port);
-
-                            if (tunnel.Start())
-                            {
-                                Debug.WriteLine("本地建立隧道进程启动");
-
-                                // 延时30s查询有没有成功建立隧道。
-                                Thread.Sleep(1000);
-
-                                // 向服务器询问隧道有没有建立成功
-                                if (await QueryTunnelStatusAsync(localMachine.ID))
-                                {
-                                    Debug.WriteLine(string.Format("建立隧道成功，地址：{0}:{1}", server.IPAdress, port));
-                                    tunnelIsOpen = true;
-                                    tunnelList.Add(tunnel);
-
-                                    // 此时告诉服务器，已经处理了请求的连接
-                                    if (await ClearRemoteControlRequestAsync(localMachine.ID))
-                                    {
-                                        Debug.WriteLine("反向隧道已经成功建立，并且可以从远程登录到本机");
-                                    }
-                                }
-                                else
-                                {
-                                    tunnel.Stop();
-                                }
-                            }
+                            Debug.WriteLine("隧道仍然正常");
+                        }
+                        else
+                        {
+                            Debug.WriteLine("隧道断开");
+                            // 关闭隧道进程
+                            CloseAllSSHReverseTunnels();
+                            tunnelIsOpen = false;
                         }
                     }
                     else
                     {
-                        Debug.WriteLine("没有远程连接请求");
+                        if (await QueryRemoteControlRequestAsync(localMachine.ID))
+                        {
+                            Debug.WriteLine("收到远程连接请求");
+
+                            // 根据协议要求，需要向服务器申请得到一个可用的代理隧道端口
+                            int port = await GetAvailableTunnelPortAsync(localMachine.ID);
+
+                            if (port != -1)
+                            {
+                                Debug.WriteLine("获得隧道端口：" + port.ToString());
+
+                                //接下来会开始建立隧道
+                                SSHReverseTunnel.SSHReverseTunnel tunnel = new SSHReverseTunnel.SSHReverseTunnel(localMachine, server, port);
+
+                                if (tunnel.Start())
+                                {
+                                    Debug.WriteLine("本地建立隧道进程启动");
+
+                                    // 延时30s查询有没有成功建立隧道。
+                                    Thread.Sleep(2500);
+
+                                    // 向服务器询问隧道有没有建立成功
+                                    if (await QueryTunnelStatusAsync(localMachine.ID))
+                                    {
+                                        Debug.WriteLine(string.Format("建立隧道成功，地址：{0}:{1}", server.IPAdress, port));
+                                        tunnelIsOpen = true;
+                                        tunnelList.Add(tunnel);
+
+                                        // 此时告诉服务器，已经处理了请求的连接
+                                        if (await ClearRemoteControlRequestAsync(localMachine.ID))
+                                        {
+                                            Debug.WriteLine("反向隧道已经成功建立，并且可以从远程登录到本机");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        tunnel.Stop();
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug.WriteLine("没有远程连接请求");
+                        }
                     }
                 }
-                else
-                {
-                    Debug.WriteLine("客户端与主机连接断开");
-                }
-                // 延时等待一段时间继续查询，目前为2s
-                Thread.Sleep(2 * 1000);
+                // 延时等待一段时间继续查询，目前为5s
+                Thread.Sleep(5 * 1000);
             }
         }
         #endregion
@@ -788,6 +813,25 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
+        /// 清除主机的标志信息：隧道的状态
+        /// </summary>
+        /// <param name="localMachineId"></param>
+        /// <returns></returns>
+        private async Task<bool> ResetTunnelPortRequestAsync(int machineId)
+        {
+            var result = await ExecuteProtocalRequestAsync<bool>("reset", machineId, "tunnel_status");
+
+            if (result != null)
+            {
+                return (bool)(result);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// 向服务器请求获得当前所有注册并且在线的机器列表
         /// </summary>
         /// <param name="localMachieId"></param>
@@ -811,7 +855,7 @@ namespace MSRDPNatTraverseClient
         /// <summary>
         /// 远程监听端口
         /// </summary>
-        private readonly int remotePort = 9001;
+        private readonly int remotePort = 9000;
 
         /// <summary>
         /// TCP客户端
@@ -829,14 +873,14 @@ namespace MSRDPNatTraverseClient
                 #region 客户端请求以及等待响应代码
                 try
                 {
-                    client.Connect(remoteIp, remotePort);
+                    client.Connect(remoteIp, programConfig.ProxyServerListenPort);
 
                     // 获取发送流，然后发送消息
                     var stream = client.GetStream();
 
                     byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
                     //Debug.WriteLine(string.Format("\n**************************************************************"));
-                    Debug.WriteLine(string.Format("发送：{0}\n", requestMsg));
+                    //Debug.WriteLine(string.Format("发送：{0}\n", requestMsg));
                     stream.Write(outBuffer, 0, outBuffer.Length);
                     //Thread sendThread = new Thread(ClientSendThread);
                     //sendThread.Start(client.SendBufferSize);
@@ -846,7 +890,7 @@ namespace MSRDPNatTraverseClient
                     byte[] inBuffer = new byte[1024];
                     stream.Read(inBuffer, 0, 1024);
                     response = Encoding.UTF8.GetString(inBuffer).Trim();
-                    Debug.WriteLine(string.Format("\n接收：{0}\n", response));
+                    //Debug.WriteLine(string.Format("\n接收：{0}\n", response));
                     //Debug.WriteLine(string.Format("\n**************************************************************\n"));
                     stream.Close();
                     client.Close();

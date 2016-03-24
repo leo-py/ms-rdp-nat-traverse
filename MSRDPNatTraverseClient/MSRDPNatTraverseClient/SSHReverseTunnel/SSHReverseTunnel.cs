@@ -101,9 +101,9 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                 // 相关设置
                 cmdProcess.StartInfo.FileName = "cmd.exe";
                 cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
-                cmdProcess.StartInfo.RedirectStandardError = true;  // 重定向标准错误
+                cmdProcess.StartInfo.RedirectStandardError = false;  // 重定向标准错误
                 cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
-                cmdProcess.StartInfo.RedirectStandardOutput = true; // 获取输出信息
+                cmdProcess.StartInfo.RedirectStandardOutput = false; // 获取输出信息
                 cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
 
                 // 启动程序
@@ -127,7 +127,6 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
 
                 cmdProcess.StandardInput.WriteLine("y");
 
-                cmdProcess.CloseMainWindow();
                 // 返回启动后的plink进程
                 return GetLastStartedProcessByName("plink");
             }
