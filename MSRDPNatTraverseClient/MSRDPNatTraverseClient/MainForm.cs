@@ -257,20 +257,15 @@ namespace MSRDPNatTraverseClient
 
         private async void Start()
         {
-            //StartLocalServer();
-            //MessageBox.Show("监听端口打开！");
-            //BuildConnectionWithProxyServer(server);
-            Response r = await QueryRemoteControlRequest(10001);
-            if (r.isResultEffective)
-            {
-                MessageBox.Show(r.Result.ToString());
-            }
+            // 根据协议要求，首先需要获取一个ID
+            var newId = await RequestMachineIdAsync();
+
+            
         }
 
         private void Stop()
         {
-            //ClientSendRequest("Request: msg from client!");
-            //BuildTunnel(server);
+            // 
         }
 
         private void Quit()
@@ -418,17 +413,17 @@ namespace MSRDPNatTraverseClient
         /// 请求获取MachineID，服务器会在收到请求后为该请求机器分配一个唯一的ID
         /// </summary>
         /// <returns></returns>
-        private async Task<Response> RequestMachineIdAsync()
+        private async Task<int> RequestMachineIdAsync()
         {
             var result = await ExecuteProtocalRequest<int>("get", "machine_id");
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (int)(result) };
+                return(int)(result);
             }
             else
             {
-                return null;
+                return -1;
             }
         }
 
@@ -437,13 +432,13 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="machine"></param>
         /// <returns></returns>
-        private async Task<Response> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
+        private async Task<string> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
         {
             var result = await ExecuteProtocalRequest<string>("upload", machine);
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (string)(result) };
+                return (string)(result);
             }
             else
             {
@@ -458,13 +453,13 @@ namespace MSRDPNatTraverseClient
         /// <param name="local"></param>
         /// <param name="remoteMachineId"></param>
         /// <returns></returns>
-        private async Task<Response> RequestToBuildConnectionWithOnlineMachine(int localMachineId, int remoteMachineId)
+        private async Task<string> RequestToBuildConnectionWithOnlineMachine(int localMachineId, int remoteMachineId)
         {
             var result = await ExecuteProtocalRequest<string>("connect_remote", localMachineId, remoteMachineId);
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (string)(result) };
+                return (string)(result);
             }
             else
             {
@@ -477,13 +472,13 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="remoteMachineId"></param>
         /// <returns></returns>
-        private async Task<Response> GetPeeredRemoteMachineAddress(int remoteMachineId)
+        private async Task<string> GetPeeredRemoteMachineAddress(int remoteMachineId)
         {
             var result = await ExecuteProtocalRequest<string>("get", remoteMachineId, "remote_machine_address");
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (string)(result) };
+                return (string)(result);
             }
             else
             {
@@ -496,17 +491,17 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="localMachineId"></param>
         /// <returns></returns>
-        private async Task<Response> GetAvailableTunnelPort(int localMachineId)
+        private async Task<int> GetAvailableTunnelPort(int localMachineId)
         {
             var result = await ExecuteProtocalRequest<int>("get", localMachineId, "available_port");
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (int)(result) };
+                return (int)(result);
             }
             else
             {
-                return null;
+                return -1;
             }
         }
 
@@ -515,13 +510,13 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="localMachineId"></param>
         /// <returns></returns>
-        private async Task<Response> QueryTunnelStatus(int localMachineId)
+        private async Task<string> QueryTunnelStatus(int localMachineId)
         {
             var result = await ExecuteProtocalRequest<string>("query", localMachineId, "tunnel_status");
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (string)(result) };
+                return (string)(result);
             }
             else
             {
@@ -534,13 +529,13 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="localMachineId"></param>
         /// <returns></returns>
-        private async Task<Response> QueryRemoteControlRequest(int localMachineId)
+        private async Task<bool> QueryRemoteControlRequest(int localMachineId)
         {
-            var result = await ExecuteProtocalRequest<string>("query", localMachineId, "remote_control_request");
+            var result = await ExecuteProtocalRequest<bool>("query", localMachineId, "remote_control_request");
 
             if (result != null)
             {
-                return new Response() { isResultEffective = true, Result = (string)(result) };
+               return (bool)(result);
             }
             else
             {
