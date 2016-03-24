@@ -149,7 +149,7 @@ def get_all_listen_ports():
         column = [x for x in row.split(' ') if x != '']
         # 出错判断,否则会导致访问不存在的元素
         if len(column) == 6:
-            listen_ports.add(int(column[3].split('.')[-1]))
+            listen_ports.add(int(column[3].split(':')[-1]))
 
     return listen_ports
 
@@ -163,7 +163,7 @@ def get_available_port(machine_id):
     # 随机生成一个端口号用于返回
     LOG.info('get_available_port')
     while True:
-        rand_port = random.Random().randrange(10000, 15000)
+        rand_port = random.Random().randrange(10000, 20000)
         if rand_port not in get_all_listen_ports():
             LOG.info('生成随机端口号用于建立反向隧道建立: {}'.format(rand_port))
             REGISTERED_MACHINES[machine_id].tunnel_port = rand_port
@@ -346,6 +346,24 @@ def handle_clear_function(request):
         return False
 
 
+def handle_reset_tunnel_port(request):
+    """
+    重置tunnel_port的值,从而间接地关闭隧道
+    :param request: 请求详细信息
+    :return:True/False
+    """
+    LOG.info('handle_reset_tunnel_port')
+    if request['content'] == 'tunnel_port':
+        if request['id'] in REGISTERED_MACHINES.keys():
+            machine = REGISTERED_MACHINES[request['id']]
+            machine.tunnel_port = -1
+            REGISTERED_MACHINES[request['id']] = machine
+            return True
+        else:
+            return False
+    return False
+
+
 def analyze_message(conn):
     """
     处理接收到的客户端消息, 该函数作为后台线程运行时调用, 处理完消息后会自动关闭连接
@@ -382,8 +400,8 @@ def analyze_message(conn):
                 response = handle_get_function(request)
             elif request['function'] == 'query':
                 response = handle_query_function(request)
-            elif request['function'] == 'clear':
-                response = handle_clear_function(request)
+            elif request['function'] == 'reset':
+                response = handle_reset_tunnel_port(request)
         else:
             # 说明这个是非法的请求
             LOG.info('收到非法的请求消息: {}'.format(request))
