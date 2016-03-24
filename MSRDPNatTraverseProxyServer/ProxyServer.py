@@ -13,6 +13,7 @@
 import os
 import sys
 import subprocess
+import random
 from RegisteredMachine import RegisteredMachine
 from json import loads, dumps, load, dump
 import socket
@@ -46,7 +47,8 @@ def append_machine(machine):
             LOG.info('无法添加相同ID的机器信息: {}'.format(str(machine)))
             return False
         else:
-            REGISTERED_MACHINES[machine.machine_id] = machine.instance
+            LOG.info('添加主机信息: {}'.format(machine.machine_id))
+            REGISTERED_MACHINES[machine.machine_id] = machine
             return True
     else:
         return False
@@ -102,41 +104,137 @@ def read_machines():
 def generate_machine_id():
     """
     该函数用于产生一个ID, 并且该ID可以唯一标识与该代理服务器连接的PC机
-    :return: 随机产生的但是合法的ID
+    :return: 随机产生的但是合法的ID,ID范围取值为(1000, 2000)
     """
-    return 10000
+    LOG.info('generate_machine_id')
+    rand = random.Random()
+
+    while True:
+        machine_id = rand.randrange(1000, 2001)
+        if machine_id not in REGISTERED_MACHINES.keys():
+            return machine_id
 
 
-def get_remote_control_machine_address():
+def get_remote_control_machine_address(remote_id):
     """
     该函数用于获取已经要求建立远程连接的机器所建立成功后的隧道IP地址和端口, 以供控制端连接.
+    :param remote_id: 远程主机ID
     :return: 远程控制的机器的地址
     """
-    return '{}:{}'.format('192.168.0.1', 10000)
+    LOG.info('get_remote_control_machine_address')
+    hostname = socket.gethostname()
+    if hostname != '':
+        server_ip = socket.gethostbyname(hostname)
+        if remote_id in REGISTERED_MACHINES.keys():
+            return '{}:{}'.format(server_ip, (REGISTERED_MACHINES[remote_id]).tunnel_port)
+
+    return '{}.{}'.format('', -1)
 
 
-def get_available_port():
+def get_all_listen_ports():
+    """
+    使用系统命令,查询当前所有的监听端口,使用netstat命令即可得到
+    """
+    # 获取所有的输出信息
+    sub = subprocess.Popen(('netstat', '-nat'), stdout=subprocess.PIPE)
+    sub.wait()
+
+    # 过滤得到只有LISTEN关键字的行
+    sub = subprocess.Popen(('grep', 'LISTEN'), stdin=sub.stdout, stdout=subprocess.PIPE)
+    sub.wait()
+
+    # 接下来会把所有端口提取出来
+    listen_ports = set()
+    for row in sub.stdout.read().decode('utf-8').split('\n'):
+        column = [x for x in row.split(' ') if x != '']
+        # 出错判断,否则会导致访问不存在的元素
+        if len(column) == 6:
+            listen_ports.add(int(column[3].split('.')[-1]))
+
+    return listen_ports
+
+
+def get_available_port(machine_id):
     """
     该函数用于分配一个合法的隧道端口给请求建立反向隧道的PC
+    :param machine_id: 机器的ID
     :return: 合法的隧道端口
     """
-    return '10000'
+    # 随机生成一个端口号用于返回
+    LOG.info('get_available_port')
+    while True:
+        rand_port = random.Random().randrange(10000, 15000)
+        if rand_port not in get_all_listen_ports():
+            LOG.info('生成随机端口号用于建立反向隧道建立: {}'.format(rand_port))
+            REGISTERED_MACHINES[machine_id].tunnel_port = rand_port
+            return REGISTERED_MACHINES[machine_id].tunnel_port
 
 
-def get_tunnel_status():
+def get_tunnel_status(machine_id):
     """
-    该函数用于查询隧道建立的状态, 通过查询机器的配置文件即可得到隧道的建立状态是否ok
-    :return: connected/disconnected
-    """
-    return 'connected'
-
-
-def get_remote_control_request():
-    """
-    该函数用来查询本机有没有收到来自其他机器的远程控制请求
+    获取隧道建立的状态
+    :param machine_id: 机器的ID
     :return: True/False
     """
-    return True
+    LOG.info('调用函数:查询隧道建立状态')
+    if machine_id in REGISTERED_MACHINES.keys():
+        LOG.info('机器存在于列表中')
+        machine = REGISTERED_MACHINES[machine_id]
+        if machine.tunnel_port in get_all_listen_ports():
+            LOG.info('{} in {}'.format(machine.tunnel_port, get_all_listen_ports()))
+            machine.tunnel_status = True
+            REGISTERED_MACHINES[machine_id] = machine
+            return True
+        else:
+            LOG.info('{} not in {}'.format(machine.tunnel_port, get_all_listen_ports()))
+            machine.tunnel_status = False
+            REGISTERED_MACHINES[machine_id] = machine
+            return False
+    else:
+        LOG.info('不存在的ID')
+        return False
+
+
+def get_remote_control_request(machine_id):
+    """
+    该函数用来查询本机有没有收到来自其他机器的远程控制请求
+    :param machine_id: 机器的ID
+    :return: True/False
+    """
+    return REGISTERED_MACHINES[machine_id].remote_control_request
+
+
+def get_machine_list(machine_id):
+    """
+    获取所有在线的机器信息,发回到客户端
+    :param machine_id: 本机的ID
+    :return: 一个字典类型的实例
+    """
+    LOG.info('get_machine_list')
+    machine_list = dict()
+
+    for machine in REGISTERED_MACHINES.values():
+        if machine_id != machine.machine_id:
+            machine_list[machine.machine_id] = machine.name
+
+    return machine_list
+
+
+def clear_remote_control_request(machine_id):
+    """
+    该函数用来清除远程连接请求,标记此时主机已经成功处理了该请求
+    :param machine_id: 机器的ID
+    :return: True/False
+    """
+    LOG.info('clear_remote_control_request')
+    if machine_id in REGISTERED_MACHINES.keys():
+        machine = REGISTERED_MACHINES[machine_id]
+        machine.remote_control_request = False
+        REGISTERED_MACHINES[machine_id] = machine
+        LOG.info('{}'.format(machine))
+        return True
+    else:
+        return False
 
 
 def build_response_str(content):
@@ -147,7 +245,7 @@ def build_response_str(content):
     """
     response = dict()
     response['response'] = content
-    LOG.info('响应消息内容: {}'.format(dumps(response)))
+    # LOG.info('响应消息内容: {}'.format(dumps(response)))
     return dumps(response)
 
 
@@ -158,18 +256,21 @@ def handle_get_function(request, with_id=True):
     :param with_id: 是否带有id的请求
     :return: json格式的回复消息
     """
+    LOG.info('handle_get_function')
     content = request['content'].strip()
     if with_id:
-        id = int(request['id'])
+        machine_id = int(request['id'])
         if content == "remote_machine_address":
-            return build_response_str(get_remote_control_machine_address())
+            return get_remote_control_machine_address(machine_id)
         elif content == "available_port":
-            return build_response_str(get_available_port())
+            return get_available_port(machine_id)
+        elif content == "online_machine_list":
+            return get_machine_list(machine_id)
         else:
             pass
     else:
         if content == "machine_id":
-            return build_response_str(generate_machine_id())
+            return generate_machine_id()
         else:
             pass
     return None
@@ -181,7 +282,18 @@ def handle_connect_remote_function(request):
     :param request: 请求的详细消息
     :return: json格式的回复消息
     """
-    return build_response_str('success')
+    LOG.info('handle_connect_remote_function')
+    machine_id_a = request['id']
+    machine_id_b = request['content']
+
+    if machine_id_b in REGISTERED_MACHINES.keys():
+        LOG.info("主机: {} 向主机: {}发送远程控制请求".format(machine_id_a, machine_id_b))
+        machine = REGISTERED_MACHINES[machine_id_b]
+        machine.remote_control_request = True
+        REGISTERED_MACHINES[machine_id_b] = machine
+        return True
+    else:
+        return False
 
 
 def handle_query_function(request):
@@ -190,16 +302,17 @@ def handle_query_function(request):
     :param request: 请求的详细消息
     :return: json格式的回复消息
     """
+    # LOG.info('handle_query_function')
     content = request['content'].strip()
-    id = int(request['id'])
+    machine_id = int(request['id'])
     if content == "tunnel_status":
-        return build_response_str(get_tunnel_status())
+        return get_tunnel_status(machine_id)
     elif content == "remote_control_request":
-        return build_response_str(get_remote_control_request())
+        return get_remote_control_request(machine_id)
     elif content == "keep-alive":
-        return build_response_str('ok')
+        return True
     else:
-        return None
+        return False
 
 
 def handle_upload_function(request):
@@ -208,8 +321,29 @@ def handle_upload_function(request):
     :param request: 请求的详细消息
     :return: json格式的回复消息
     """
-    print(request['content'])
-    return build_response_str('ok')
+    LOG.info('handle_upload_function')
+    content = (request['content'])
+
+    if content['ID'] not in REGISTERED_MACHINES:
+        machine = RegisteredMachine(machine_id=content['ID'],
+                                    name=content['Name'],
+                                    description=content['Description'])
+        append_machine(machine)
+
+    return True
+
+
+def handle_clear_function(request):
+    """
+    专门用于处理协议中的clear方法
+    :param request: 请求详细信息
+    :return: json响应消息
+    """
+    LOG.info("handle_clear_function")
+    if request['content'] == 'remote_control_request':
+        return clear_remote_control_request(int(request['id']))
+    else:
+        return False
 
 
 def analyze_message(conn):
@@ -222,8 +356,7 @@ def analyze_message(conn):
 
     try:
         recv_msg = conn.recv(1024)
-        LOG.info('接收到来自客户端的消息:\n{}'.format(recv_msg.decode('utf-8')))
-
+        # LOG.info('接收到来自客户端的消息:\n{}'.format(recv_msg.decode('utf-8')))
         # 对消息内容进行分析
         request = loads(recv_msg.decode('utf-8'))
         if type(request) is not dict:
@@ -235,25 +368,27 @@ def analyze_message(conn):
         # 再看有几个键值
         if len(request.keys()) == 2:
             # 说明这是不带有machine_id的请求消息
-            LOG.info('不带有ID的请求消息')
+            # LOG.info('不带有ID的请求消息')
             if request['function'] == 'get':
                 response = handle_get_function(request, False)
             elif request['function'] == 'upload':
                 response = handle_upload_function(request)
         elif len(request.keys()) == 3:
             # 说明这是带有machine_id的请求消息
-            LOG.info('带有ID的请求消息')
+            # LOG.info('带有ID的请求消息')
             if request['function'] == 'connect_remote':
                 response = handle_connect_remote_function(request)
             elif request['function'] == 'get':
                 response = handle_get_function(request)
             elif request['function'] == 'query':
                 response = handle_query_function(request)
+            elif request['function'] == 'clear':
+                response = handle_clear_function(request)
         else:
             # 说明这个是非法的请求
             LOG.info('收到非法的请求消息: {}'.format(request))
         if response is not None and response != "":
-            conn.send(response.encode('utf-8'))
+            conn.send(build_response_str(response).encode('utf-8'))
         conn.close()
     except Exception as e:
         conn.close()
@@ -357,7 +492,7 @@ def config_logging():
 
 def main():
     config_logging()
-    server = ProxyServer('223.3.22.72', 9001)
+    server = ProxyServer('0.0.0.0', 9001)
     try:
         server.start()
     except Exception as e:
