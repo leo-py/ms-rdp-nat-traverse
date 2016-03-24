@@ -73,44 +73,18 @@ namespace MSRDPNatTraverseClient
             ShowAboutDialog();
         }
 
-        private void EditLocalMachineToolStripMenuItem_Click(object sender, EventArgs e)
+        private void EditLocalMachineToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
             EditLocalMachine();
+        }
+
+        private void SaveLocalMachineToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveLocalMachine();
         }
         #endregion
 
         #region event_handlers for program control region
-        private void machienInfoTextBox_DoubleClick(object sender, EventArgs e)
-        {
-            TextBox tb = sender as TextBox;
-            if (tb != null)
-            {
-                tb.ReadOnly = !tb.ReadOnly;
-
-                if (tb.ReadOnly == true)
-                {
-                    // 保存信息
-                    switch (tb.Tag.ToString())
-                    {
-                        case "name":
-                            localMachine.Name = tb.Text;
-                            break;
-                        case "id":
-                            localMachine.ID = int.Parse(tb.Text);
-                            break;
-                        case "rdpPort":
-                            localMachine.RDPPort = int.Parse(tb.Text);
-                            break;
-                        case "desc":
-                            localMachine.Description = tb.Text;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-
         private void autoStartupCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             var cb = sender as CheckBox;
@@ -144,6 +118,31 @@ namespace MSRDPNatTraverseClient
             Quit();
         }
 
+        private void upddateRemteMachineListButton_Click(object sender, EventArgs e)
+        {
+
+        }
+        private void controlButton_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void machineInfoTextBox_ReadOnlyChanged(object sender, EventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb != null)
+            {
+                if (tb.ReadOnly)
+                {
+                    tb.ForeColor = Color.Black;
+                }
+                else
+                {
+                    tb.ForeColor = Color.Blue;
+                }
+            }
+        }
+
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // 关闭打开的隧道
@@ -158,7 +157,26 @@ namespace MSRDPNatTraverseClient
         #region proxy functions: do what the handlers what to
         private void EditLocalMachine()
         {
-            MessageBox.Show("Good");
+            // 将编辑窗口改为可写状态
+            machineNameTextBox.ReadOnly = false;
+            machineDescriptionTextBox.ReadOnly = false;
+            RDPPortTextBox.ReadOnly = false;
+        }
+
+        private void SaveLocalMachine()
+        {
+            // 重置为只读状态
+            machineNameTextBox.ReadOnly = true;
+            machineDescriptionTextBox.ReadOnly = true;
+            RDPPortTextBox.ReadOnly = true;
+
+            // 保存所有信息
+            localMachine.Name = machineNameTextBox.Text;
+            localMachine.Description = machineDescriptionTextBox.Text;
+            localMachine.RDPPort = int.Parse(RDPPortTextBox.Text);
+
+            // 告诉配置信息类
+            programConfig.Machine = localMachine;
         }
 
         private void EditServer()
@@ -237,11 +255,16 @@ namespace MSRDPNatTraverseClient
             programConfig.EnableBackgroundMode = enable;
         }
 
-        private void Start()
+        private async void Start()
         {
             //StartLocalServer();
             //MessageBox.Show("监听端口打开！");
             //BuildConnectionWithProxyServer(server);
+            Response r = await QueryRemoteControlRequest(10001);
+            if (r.isResultEffective)
+            {
+                MessageBox.Show(r.Result.ToString());
+            }
         }
 
         private void Stop()
@@ -317,164 +340,263 @@ namespace MSRDPNatTraverseClient
 
         class RequestMsgWithId : RequestMsg
         {
-            public int MachineId;
+            public int id;
+        }
+
+        class Response
+        {
+            public bool isResultEffective;   // 表示结果能否使用
+            public object Result;            // 返回的结果
+        }
+
+        /// <summary>
+        /// 执行标准的协议请求，返回固定格式的应答。
+        /// </summary>
+        /// <param name="function"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private async Task<object> ExecuteProtocalRequest<T>(string function, object content)
+        {
+            // 构建消息
+            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
+            {
+                function = function,
+                content = content
+            }, Formatting.Indented);
+
+            // 发送消息，等待应答
+            var resp = await ClientSendMessageAsync(sendMsg);
+
+            // 判断并返回响应
+            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, T>>(resp);
+
+            if (responseDict.Count == 1 && responseDict.ContainsKey("response"))
+            {
+                return responseDict["response"];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 执行标准的协议请求，返回固定格式的应答。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="function"></param>
+        /// <param name="id"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private async Task<object> ExecuteProtocalRequest<T>(string function, int id, object content)
+        {
+            // 构建消息
+            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
+            {
+                function = function,
+                id = id,
+                content = content
+            }, Formatting.Indented);
+
+            // 发送消息，等待应答
+            var resp = await ClientSendMessageAsync(sendMsg);
+
+            // 判断并返回响应
+            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, T>>(resp);
+
+            if (responseDict != null && responseDict.Count == 1 && responseDict.ContainsKey("response"))
+            {
+                return responseDict["response"];
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
         /// 请求获取MachineID，服务器会在收到请求后为该请求机器分配一个唯一的ID
         /// </summary>
-        /// <param name="machineId">存储返回的ID</param>
         /// <returns></returns>
-        private bool RequestMachineId(out int machineId)
+        private async Task<Response> RequestMachineIdAsync()
         {
-            machineId = 10000;
+            var result = await ExecuteProtocalRequest<int>("get", "machine_id");
 
-            // 要发送的请求消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
+            if (result != null)
             {
-                function = "get",
-                content = "machine_id"
-            }, Formatting.Indented);
-
-            var resp = ClientSendMessage(sendMsg);
-
-            // 返回的消息是一个json格式的字符串
-            var obj = JsonConvert.DeserializeObject(resp);
-
-            return false;
+                return new Response() { isResultEffective = true, Result = (int)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
-        private bool UploadMachineInfoToProxyServer(LocalMachine.LocalMachine machine)
+        /// <summary>
+        /// 向代理服务器发送本机信息
+        /// </summary>
+        /// <param name="machine"></param>
+        /// <returns></returns>
+        private async Task<Response> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
         {
-            // 构建要发送的消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
-            {   
-                function = "upload",
-                content = machine
-            }, Formatting.Indented);
+            var result = await ExecuteProtocalRequest<string>("upload", machine);
 
-            // 向服务器发送消息
-            var resp = ClientSendMessage(sendMsg);
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
+        }
 
-            return true;
+        /// <summary>
+        /// 请求与在线用户建立连接，注意，该函数执行后，不保证隧道建立成功
+        /// 因为可能远程主机掉线、或者正在被其他主机连接，因为也会拒绝连接
+        /// </summary>
+        /// <param name="local"></param>
+        /// <param name="remoteMachineId"></param>
+        /// <returns></returns>
+        private async Task<Response> RequestToBuildConnectionWithOnlineMachine(int localMachineId, int remoteMachineId)
+        {
+            var result = await ExecuteProtocalRequest<string>("connect_remote", localMachineId, remoteMachineId);
+
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 该函数用于向服务器查询已经尝试建立成功的配对远程计算机的地址
+        /// </summary>
+        /// <param name="remoteMachineId"></param>
+        /// <returns></returns>
+        private async Task<Response> GetPeeredRemoteMachineAddress(int remoteMachineId)
+        {
+            var result = await ExecuteProtocalRequest<string>("get", remoteMachineId, "remote_machine_address");
+
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 客户端请求建立一条隧道，但是需要得到一个合法的端口地址在服务器上监听
+        /// </summary>
+        /// <param name="localMachineId"></param>
+        /// <returns></returns>
+        private async Task<Response> GetAvailableTunnelPort(int localMachineId)
+        {
+            var result = await ExecuteProtocalRequest<int>("get", localMachineId, "available_port");
+
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (int)(result) };
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 查询已经尝试建立隧道的状态
+        /// </summary>
+        /// <param name="localMachineId"></param>
+        /// <returns></returns>
+        private async Task<Response> QueryTunnelStatus(int localMachineId)
+        {
+            var result = await ExecuteProtocalRequest<string>("query", localMachineId, "tunnel_status");
+
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 查询是否有其他机器要求与自身建立连接请求
+        /// </summary>
+        /// <param name="localMachineId"></param>
+        /// <returns></returns>
+        private async Task<Response> QueryRemoteControlRequest(int localMachineId)
+        {
+            var result = await ExecuteProtocalRequest<string>("query", localMachineId, "remote_control_request");
+
+            if (result != null)
+            {
+                return new Response() { isResultEffective = true, Result = (string)(result) };
+            }
+            else
+            {
+                return null;
+            }
         }
         #endregion
 
         #region TCP通信相关函数
         /// <summary>
-        /// 本地监听端口
-        /// </summary>
-        private readonly int localServerListenPort = 19930;
-        private readonly string localServerListenIP = "0.0.0.0";
-
-        /// <summary>
-        /// 在全局范围引用。
-        /// </summary>
-        private TcpListener localListener = null;
-
-        /// <summary>
-        /// 在本地设置一个监听服务，在特定端口上监听来自远程代理服务器发送过来的请求信息；
-        /// 并且根据请求信息，完成相关的工作。
-        /// </summary>
-        private void StartLocalServer()
-        {
-            localListener = new TcpListener(IPAddress.Parse(localServerListenIP), localServerListenPort);
-
-            // 新建一个线程专门用于监听
-            Thread localListenerThread = new Thread(LocalListenerServerThread);
-
-            // 启动监听和处理线程
-            localListenerThread.Start();
-        }
-
-        /// <summary>
-        /// 本地监听进程。
-        /// </summary>
-        private void LocalListenerServerThread()
-        {
-            if (localListener != null)
-            {
-                localListener.Start();
-
-                // 存放接收的数据buffer
-                byte[] recvBuffer = null;
-
-                // 接收消息字节大小
-                int msgSize = 0;
-
-                while (true)
-                {
-                    var client = localListener.AcceptTcpClient();
-                    var inStream = client.GetStream();
-                    recvBuffer = new byte[client.ReceiveBufferSize];
-
-                    try
-                    {
-                        lock (inStream)
-                        {
-                            msgSize = inStream.Read(recvBuffer, 0, recvBuffer.Length);
-                        }
-                        if (msgSize == 0)
-                        {
-                            return;
-                        }
-                        string recvMsg = Encoding.Default.GetString(recvBuffer);
-
-                        this.Invoke(new Action(() =>
-                        {
-                            machineDescriptionTextBox.Text += recvMsg + "\n";
-                        }));
-                        client.Close();
-                    }
-                    catch { }
-                }
-            }
-        }
-
-        /// <summary>
         /// 远程监听端口
         /// </summary>
-        private readonly int remotePort = 19934;
+        private readonly int remotePort = 9001;
 
         /// <summary>
         /// TCP客户端
+        /// 更新：修改为支持异步调用的方法
         /// </summary>
         /// <param name="requestMsg"></param>
         /// <returns></returns>
-        private string ClientSendMessage(string requestMsg)
+        private async Task<string> ClientSendMessageAsync(string requestMsg)
         {
             TcpClient client = new TcpClient();
             IPAddress remoteIp = IPAddress.Parse(server.IPAdress);
             string response = "";
-
-            #region 客户端请求以及等待响应代码
-            try
+            await Task.Run(new Action(() =>
             {
-                client.Connect(remoteIp, remotePort);
+                #region 客户端请求以及等待响应代码
+                try
+                {
+                    client.Connect(remoteIp, remotePort);
 
-                // 获取发送流，然后发送消息
-                var stream = client.GetStream();
+                    // 获取发送流，然后发送消息
+                    var stream = client.GetStream();
 
-                byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
-                stream.Write(outBuffer, 0, outBuffer.Length);
-                //Thread sendThread = new Thread(ClientSendThread);
-                //sendThread.Start(client.SendBufferSize);
+                    byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
+                    stream.Write(outBuffer, 0, outBuffer.Length);
+                    //Thread sendThread = new Thread(ClientSendThread);
+                    //sendThread.Start(client.SendBufferSize);
 
-                // 延时等待响应结果。
-                Thread.Sleep(200);
-                byte[] inBuffer = new byte[1024];
-                stream.Read(inBuffer, 0, 1024);
-                response = Encoding.UTF8.GetString(inBuffer).Trim();
+                    // 延时等待响应结果。
+                    Thread.Sleep(200);
+                    byte[] inBuffer = new byte[1024];
+                    stream.Read(inBuffer, 0, 1024);
+                    response = Encoding.UTF8.GetString(inBuffer).Trim();
 
-                stream.Close();
-                client.Close();
-            }
-            catch
-            { }
-            #endregion
-
-            return response;
+                    stream.Close();
+                    client.Close();
+                }
+                catch
+                { }
+                #endregion
+            }));
+            return response.Replace('\0', ' ').Trim();
         }
         #endregion
+
     }
 }

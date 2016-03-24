@@ -17,6 +17,7 @@ class RegisteredMachine(object):
     def __init__(self,
                  machine_id=10000,
                  name=None,
+                 description=None,
                  tunnel_port=-1,
                  tunnel_status=False,
                  remote_control_request=False,
@@ -24,6 +25,7 @@ class RegisteredMachine(object):
         registered_machine = dict()
         registered_machine['id'] = machine_id
         registered_machine['name'] = name
+        registered_machine['description'] = description
         registered_machine['tunnel_port'] = tunnel_port
         registered_machine['tunnel_status'] = tunnel_status
         registered_machine['remote_control_request'] = remote_control_request
@@ -51,6 +53,15 @@ class RegisteredMachine(object):
     def name(self, value):
         if isinstance(value, str):
             self.__registered_machine['name'] = value
+
+    @property
+    def description(self):
+        return self.__registered_machine['description']
+
+    @description.setter
+    def description(self, value):
+        if isinstance(value, str):
+            self.__registered_machine['description'] = value;
 
     @property
     def tunnel_port(self):
