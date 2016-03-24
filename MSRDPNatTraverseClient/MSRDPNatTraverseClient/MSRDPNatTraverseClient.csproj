@@ -49,7 +49,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Json80r3\Bin\Net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\Json80r3\Bin\Net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

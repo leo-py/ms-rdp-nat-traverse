@@ -114,7 +114,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                     PLINK_PROGRAM_PATH,
                     _server.LoginPassword,
                     _server.LoginPort,
-                    _server.IPAdress,
+                    "0.0.0.0",
                     _tunnelPort,
                     "127.0.0.1",
                     _machine.RDPPort,
@@ -122,10 +122,12 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                     _server.IPAdress);
 
                 cmdProcess.StandardInput.WriteLine(cmdStr);
-
                 // 延时等待进程启动
                 System.Threading.Thread.Sleep(100);
 
+                cmdProcess.StandardInput.WriteLine("y");
+
+                cmdProcess.CloseMainWindow();
                 // 返回启动后的plink进程
                 return GetLastStartedProcessByName("plink");
             }

@@ -14,6 +14,8 @@ using MSRDPNatTraverseClient.Config;
 using MSRDPNatTraverseClient.Utility;
 using MSRDPNatTraverseClient.SSHReverseTunnel;
 using Newtonsoft.Json;
+using System.Diagnostics;
+using MSRDPNatTraverseClient.LocalMachine;
 
 namespace MSRDPNatTraverseClient
 {
@@ -120,11 +122,33 @@ namespace MSRDPNatTraverseClient
 
         private void upddateRemteMachineListButton_Click(object sender, EventArgs e)
         {
-
+            UpdateRemoteMachineList();
         }
-        private void controlButton_Click(object sender, EventArgs e)
+        private async void controlButton_Click(object sender, EventArgs e)
         {
+            var bt = sender as Button;
+            if (bt != null)
+            {
+                if (remoteMachineListBox.SelectedIndex == -1)
+                {
+                    return;
+                }
+                int remoteId = int.Parse(remoteMachineListBox.SelectedItem.ToString().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)[0]);
+                Debug.WriteLine(string.Format("连接远程主机：{0}", remoteId));
 
+                if (bt.Text.Equals("连接"))
+                {
+                    if (await ConnectRemoteMachineAsync(remoteId))
+                    {
+                        bt.Text = "断开";
+                    }
+                }
+                else
+                {
+                    DisconnectRemoteMachine(remoteId);
+                    bt.Text = "连接";
+                }
+            }
         }
 
         private void machineInfoTextBox_ReadOnlyChanged(object sender, EventArgs e)
@@ -145,6 +169,12 @@ namespace MSRDPNatTraverseClient
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // 关闭所有已经打开的线程
+            foreach (var thr in customThreadDict)
+            {
+                thr.Value.Abort();
+            }
+
             // 关闭打开的隧道
             CloseAllSSHReverseTunnels();
 
@@ -240,6 +270,14 @@ namespace MSRDPNatTraverseClient
             serverIPTextBox.Text = string.Format("{0}:{1}", server.IPAdress, server.LoginPort);
         }
 
+        private void ShowLocalMachineInfo(LocalMachine.LocalMachine machine)
+        {
+            machineNameTextBox.Text = machine.Name;
+            machineIDTextBox.Text = machine.ID.ToString();
+            machineDescriptionTextBox.Text = machine.Description;
+            RDPPortTextBox.Text = machine.RDPPort.ToString();
+        }
+
         private void ShowAboutDialog()
         {
             (new AboutForm()).ShowDialog();
@@ -255,23 +293,214 @@ namespace MSRDPNatTraverseClient
             programConfig.EnableBackgroundMode = enable;
         }
 
+        /// <summary>
+        /// 设置服务器连接状态
+        /// </summary>
+        /// <param name="status"></param>
+        private void SetServerConnectionStatus(bool status)
+        {
+            machineIsOnline = status;
+            if (status)
+            {
+                serverStatusTextBox.Text = "连接正常";
+            }
+            else
+            {
+                serverStatusTextBox.Text = "连接断开";
+            }
+        }
+
+        /// <summary>
+        /// 存放的自定义的线程集合，便于统一管理
+        /// </summary>
+        private Dictionary<string, Thread> customThreadDict = new Dictionary<string, Thread>();
+
+        /// <summary>
+        /// 只有与服务器建立连接后才为true
+        /// </summary>
+        private bool machineIsOnline = false;
         private async void Start()
         {
             // 根据协议要求，首先需要获取一个ID
+            Debug.WriteLine(string.Format("客户端向代理服务器{0}({1}:{2})发送请求：获取一个唯一分配的ID", server.Name, server.IPAdress, remotePort));
             var newId = await RequestMachineIdAsync();
+            if (newId == -1)
+            {
+                // 表明没有获取到合法的ID，因此无法与代理服务器建立连接，故为断开连接状态
+                Debug.WriteLine("请求获取ID失败");
+                SetServerConnectionStatus(false);
+            }
+            else
+            {
+                // 成功获取到ID后，我们将会输出调试信息，查看获得的ID是多少
+                Debug.WriteLine(string.Format("客户端成功获取到ID: {0}", newId));
 
+                // 更新本机的ID，并同步显示在窗口中
+                localMachine.ID = newId;
+                ShowLocalMachineInfo(localMachine);
+
+                // 下面开始向服务器上传当前机器的信息
+                Debug.WriteLine("向代理服务器发送机器信息");
+                if (await UploadMachineInfoToProxyServerAsync(localMachine))
+                {
+                    SetServerConnectionStatus(true);
+                    Debug.WriteLine("上传本机信息成功");
+
+                    // 启动两个子线程，分别用于查询远程请求状态和发送Keep-Alive消息，保证让服务器知道客户端的存在
+                    Debug.WriteLine("启动线程：定时查询远程连接请求");
+                    Thread thr1 = new Thread(QueryRemoteControlRequestThread);
+
+                    // 添加到列表中便于管理
+                    if (!customThreadDict.ContainsKey("remoteControlRequestThread"))
+                    {
+                        customThreadDict.Add("remoteControlRequestThread", thr1);
+                        thr1.Start();
+                    }
+                    
+                }
+            }
             
         }
 
         private void Stop()
         {
-            // 
+            var tunnel = new MSRDPNatTraverseClient.SSHReverseTunnel.SSHReverseTunnel(localMachine, server, 11812);
+            tunnel.Start();
+
+            tunnelList.Add(tunnel);
         }
 
         private void Quit()
         {
             //QueryTunnelStatus();
             //this.Close();
+        }
+
+        /// <summary>
+        /// 更新在线用户列表
+        /// </summary>
+        private async void UpdateRemoteMachineList()
+        {
+            Dictionary<int, string> list = await GetRemoteMachineList(localMachine.ID);
+            if (list == null)
+            {
+                return;
+            }
+
+            remoteMachineListBox.Items.Clear();
+            foreach (var item in list)
+            {
+                remoteMachineListBox.Items.Add(string.Format("{0}    {1}", item.Key, item.Value));
+            }
+        }
+
+        /// <summary>
+        /// 完成和远程主机连接的过程
+        /// </summary>
+        /// <param name="remoteId"></param>
+        /// <returns></returns>
+        private async Task<bool> ConnectRemoteMachineAsync(int remoteId)
+        {
+            // 第一步，向远程主机发送请求，要求连接到主机remoteId上
+            if (await RequestToBuildConnectionWithOnlineMachineAsync(localMachine.ID, remoteId))
+            {
+                Debug.WriteLine("远程服务器已经收到消息，并向远程主机发送邀请");
+
+                // 第二步，等待远程主机建立隧道
+                int tryCount = 15;
+                while (await QueryRemoteControlRequestAsync(remoteId))
+                {
+                    Thread.Sleep(500);
+                    if (tryCount-- == 0)
+                    {
+                        return false;
+                    }
+                }
+
+                Debug.WriteLine("已经建立了隧道，准备等待连接");
+                // 获取远程主机的IP和端口号
+                var result = await GetPeeredRemoteMachineAddressAsync(remoteId);
+
+                MessageBox.Show("请打开微软远程控制程序，输入地址：" + result);
+
+                return true;
+            }
+            else
+            {
+                Debug.WriteLine("请求连接失败！");
+                return false;
+            }
+        }
+
+        private void DisconnectRemoteMachine(int remoteId)
+        {
+
+        }
+
+        /// <summary>
+        /// 标记隧道是否已经打开
+        /// </summary>
+        private bool tunnelIsOpen = false;
+        private async void QueryRemoteControlRequestThread()
+        {
+            while (true)
+            {
+                // 只有在线，才会发送查询消息
+                if (machineIsOnline && !tunnelIsOpen)
+                {
+                    if (await QueryRemoteControlRequestAsync(localMachine.ID))
+                    {
+                        Debug.WriteLine("收到远程连接请求");
+
+                        // 根据协议要求，需要向服务器申请得到一个可用的代理隧道端口
+                        int port = await GetAvailableTunnelPortAsync(localMachine.ID);
+
+                        if (port != -1)
+                        {
+                            Debug.WriteLine("获得隧道端口：" + port.ToString());
+
+                            //接下来会开始建立隧道
+                            SSHReverseTunnel.SSHReverseTunnel tunnel = new SSHReverseTunnel.SSHReverseTunnel(localMachine, server, port);
+
+                            if (tunnel.Start())
+                            {
+                                Debug.WriteLine("本地建立隧道进程启动");
+
+                                // 延时30s查询有没有成功建立隧道。
+                                Thread.Sleep(1000);
+
+                                // 向服务器询问隧道有没有建立成功
+                                if (await QueryTunnelStatusAsync(localMachine.ID))
+                                {
+                                    Debug.WriteLine(string.Format("建立隧道成功，地址：{0}:{1}", server.IPAdress, port));
+                                    tunnelIsOpen = true;
+                                    tunnelList.Add(tunnel);
+
+                                    // 此时告诉服务器，已经处理了请求的连接
+                                    if (await ClearRemoteControlRequestAsync(localMachine.ID))
+                                    {
+                                        Debug.WriteLine("反向隧道已经成功建立，并且可以从远程登录到本机");
+                                    }
+                                }
+                                else
+                                {
+                                    tunnel.Stop();
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine("没有远程连接请求");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("客户端与主机连接断开");
+                }
+                // 延时等待一段时间继续查询，目前为2s
+                Thread.Sleep(2 * 1000);
+            }
         }
         #endregion
 
@@ -281,10 +510,7 @@ namespace MSRDPNatTraverseClient
             if (conf != null)
             {
                 // 显示本机的有关信息
-                machineNameTextBox.Text = conf.Machine.Name;
-                machineIDTextBox.Text = conf.Machine.ID.ToString("0000");
-                RDPPortTextBox.Text = conf.Machine.RDPPort.ToString();
-                machineDescriptionTextBox.Text = conf.Machine.Description;
+                ShowLocalMachineInfo(conf.Machine);
 
                 // checkbox状态
                 autoStartupCheckBox.Checked = conf.AutoStartup;
@@ -304,8 +530,7 @@ namespace MSRDPNatTraverseClient
                         {
                             server = serverList[0];
                         }
-                        serverNameTextBox.Text = server.Name;
-                        serverIPTextBox.Text = string.Format("{0}:{1}", server.IPAdress, server.LoginPort);
+                        ShowProxyServerInfo(server);
                     }  
                 }
             }
@@ -350,7 +575,7 @@ namespace MSRDPNatTraverseClient
         /// <param name="function"></param>
         /// <param name="content"></param>
         /// <returns></returns>
-        private async Task<object> ExecuteProtocalRequest<T>(string function, object content)
+        private async Task<object> ExecuteProtocalRequestAsync<T>(string function, object content)
         {
             // 构建消息
             var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
@@ -383,7 +608,7 @@ namespace MSRDPNatTraverseClient
         /// <param name="id"></param>
         /// <param name="content"></param>
         /// <returns></returns>
-        private async Task<object> ExecuteProtocalRequest<T>(string function, int id, object content)
+        private async Task<object> ExecuteProtocalRequestAsync<T>(string function, int id, object content)
         {
             // 构建消息
             var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
@@ -415,7 +640,7 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<int> RequestMachineIdAsync()
         {
-            var result = await ExecuteProtocalRequest<int>("get", "machine_id");
+            var result = await ExecuteProtocalRequestAsync<int>("get", "machine_id");
 
             if (result != null)
             {
@@ -432,17 +657,17 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="machine"></param>
         /// <returns></returns>
-        private async Task<string> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
+        private async Task<bool> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
         {
-            var result = await ExecuteProtocalRequest<string>("upload", machine);
+            var result = await ExecuteProtocalRequestAsync<bool>("upload", machine);
 
             if (result != null)
             {
-                return (string)(result);
+                return (bool)(result);
             }
             else
             {
-                return null;
+                return false;
             }
         }
 
@@ -453,17 +678,17 @@ namespace MSRDPNatTraverseClient
         /// <param name="local"></param>
         /// <param name="remoteMachineId"></param>
         /// <returns></returns>
-        private async Task<string> RequestToBuildConnectionWithOnlineMachine(int localMachineId, int remoteMachineId)
+        private async Task<bool> RequestToBuildConnectionWithOnlineMachineAsync(int localMachineId, int remoteMachineId)
         {
-            var result = await ExecuteProtocalRequest<string>("connect_remote", localMachineId, remoteMachineId);
+            var result = await ExecuteProtocalRequestAsync<bool>("connect_remote", localMachineId, remoteMachineId);
 
             if (result != null)
             {
-                return (string)(result);
+                return (bool)(result);
             }
             else
             {
-                return null;
+                return false;
             }
         }
 
@@ -472,9 +697,9 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="remoteMachineId"></param>
         /// <returns></returns>
-        private async Task<string> GetPeeredRemoteMachineAddress(int remoteMachineId)
+        private async Task<string> GetPeeredRemoteMachineAddressAsync(int remoteMachineId)
         {
-            var result = await ExecuteProtocalRequest<string>("get", remoteMachineId, "remote_machine_address");
+            var result = await ExecuteProtocalRequestAsync<string>("get", remoteMachineId, "remote_machine_address");
 
             if (result != null)
             {
@@ -491,9 +716,9 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="localMachineId"></param>
         /// <returns></returns>
-        private async Task<int> GetAvailableTunnelPort(int localMachineId)
+        private async Task<int> GetAvailableTunnelPortAsync(int localMachineId)
         {
-            var result = await ExecuteProtocalRequest<int>("get", localMachineId, "available_port");
+            var result = await ExecuteProtocalRequestAsync<int>("get", localMachineId, "available_port");
 
             if (result != null)
             {
@@ -510,17 +735,17 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="localMachineId"></param>
         /// <returns></returns>
-        private async Task<string> QueryTunnelStatus(int localMachineId)
+        private async Task<bool> QueryTunnelStatusAsync(int localMachineId)
         {
-            var result = await ExecuteProtocalRequest<string>("query", localMachineId, "tunnel_status");
+            var result = await ExecuteProtocalRequestAsync<bool>("query", localMachineId, "tunnel_status");
 
             if (result != null)
             {
-                return (string)(result);
+                return (bool)(result);
             }
             else
             {
-                return null;
+                return false;
             }
         }
 
@@ -529,13 +754,51 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="localMachineId"></param>
         /// <returns></returns>
-        private async Task<bool> QueryRemoteControlRequest(int localMachineId)
+        private async Task<bool> QueryRemoteControlRequestAsync(int localMachineId)
         {
-            var result = await ExecuteProtocalRequest<bool>("query", localMachineId, "remote_control_request");
+            var result = await ExecuteProtocalRequestAsync<bool>("query", localMachineId, "remote_control_request");
 
             if (result != null)
             {
                return (bool)(result);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 告诉代理服务器，本机已经接收到并且处理完远程连接请求，并且此时的隧道也已经建立成功
+        /// </summary>
+        /// <param name="localMachineId"></param>
+        /// <returns></returns>
+        private async Task<bool> ClearRemoteControlRequestAsync(int localMachineId)
+        {
+            var result = await ExecuteProtocalRequestAsync<bool>("clear", localMachineId, "remote_control_request");
+
+            if (result != null)
+            {
+                return (bool)(result);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 向服务器请求获得当前所有注册并且在线的机器列表
+        /// </summary>
+        /// <param name="localMachieId"></param>
+        /// <returns></returns>
+        private async Task<Dictionary<int, string>> GetRemoteMachineList(int localMachineId)
+        {
+            var result = await ExecuteProtocalRequestAsync<Dictionary<int, string>>("get", localMachineId, "online_machine_list");
+
+            if (result != null)
+            {
+                return (Dictionary<int, string>)(result);
             }
             else
             {
@@ -572,6 +835,8 @@ namespace MSRDPNatTraverseClient
                     var stream = client.GetStream();
 
                     byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
+                    //Debug.WriteLine(string.Format("\n**************************************************************"));
+                    Debug.WriteLine(string.Format("发送：{0}\n", requestMsg));
                     stream.Write(outBuffer, 0, outBuffer.Length);
                     //Thread sendThread = new Thread(ClientSendThread);
                     //sendThread.Start(client.SendBufferSize);
@@ -581,7 +846,8 @@ namespace MSRDPNatTraverseClient
                     byte[] inBuffer = new byte[1024];
                     stream.Read(inBuffer, 0, 1024);
                     response = Encoding.UTF8.GetString(inBuffer).Trim();
-
+                    Debug.WriteLine(string.Format("\n接收：{0}\n", response));
+                    //Debug.WriteLine(string.Format("\n**************************************************************\n"));
                     stream.Close();
                     client.Close();
                 }
