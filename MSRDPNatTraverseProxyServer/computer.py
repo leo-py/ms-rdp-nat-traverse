@@ -348,3 +348,10 @@ class ComputerGroup:
         """
         return len(self._members)
 
+    def get_members(self):
+        """
+        获得计算机组成员
+        :return: dict
+        """
+        return self._members
+

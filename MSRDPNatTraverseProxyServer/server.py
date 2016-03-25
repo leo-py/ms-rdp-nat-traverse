@@ -11,9 +11,10 @@
 # 备注：无
 # 日志：无
 import socket
-from threading import Thread
+from threading import Thread, Timer
 from protocols import *
 from config import *
+from time import sleep
 
 # 全局的配置
 PROGRAM_CONFIG = {
@@ -21,6 +22,31 @@ PROGRAM_CONFIG = {
     "log_level": 'INFO',
     "log_name": "debug.log"
 }
+
+# 检查在线状况的时间间隔, 单位为秒
+CHECK_INTERVAL = 5
+
+
+def check_alive_thread():
+    while True:
+        # LOG.debug('检查计算机是否在线...')
+        # 不断地对keep_alive_count做递减的操作,当递减到零后,会认为计算机下线了
+        from protocols import COMPUTER_GROUP
+
+        # 记录下线的计算机的id
+        offline_id_list = list()
+
+        for computer in COMPUTER_GROUP.get_members().values():
+            computer.keep_alive_count -= 1
+            if computer.keep_alive_count == 0:
+                offline_id_list.append(computer.id)
+
+        # 移除那些离线的计算机
+        for c_id in offline_id_list:
+            if COMPUTER_GROUP.remove(c_id):
+                LOG.debug('id: {}的计算机已经离线'.format(c_id))
+
+        sleep(CHECK_INTERVAL)
 
 
 def connection_thread(connection):
@@ -61,7 +87,7 @@ class ListenThread(Thread):
         self.__listen_server.bind((listen_ip, listen_port))
         self.__can_run = False
 
-    def __run(self):
+    def run(self):
         """
         监听来自客户端发起的连接,和接收消息并启动新的线程处理消息.
         """
@@ -69,6 +95,7 @@ class ListenThread(Thread):
             conn, add = self.__listen_server.accept()
             LOG.debug('收到连接请求,来自: {}'.format(add))
             thread = Thread(target=connection_thread, args=(conn,))
+            thread.setDaemon(True)
             thread.start()
 
     def start(self):
@@ -78,7 +105,12 @@ class ListenThread(Thread):
         LOG.debug('启动监听线程, 监听地址: {0}:{1}'.format(self._listen_ip, self._listen_port))
         self.__listen_server.listen()
         self.__can_run = True
-        self.__run()
+
+        LOG.debug('启动检查计算机是否在线的线程')
+        ck_alive = Thread(target=check_alive_thread, name='check_alive')
+        ck_alive.setDaemon(True)
+        ck_alive.start()
+        self.run()
 
     def stop(self):
         """
@@ -109,7 +141,9 @@ class ProxyServer(object):
             self._listen_thread = ListenThread(self._listen_ip,
                                                self._listen_port,
                                                'listen_thread')
+            self._listen_thread.setDaemon(True)
             self._listen_thread.start()
+        LOG.debug('已经成功启动')
 
     def stop(self):
         """
@@ -140,9 +174,8 @@ def main():
     else:
         config_logging()
 
-    server = None
+    server = ProxyServer('0.0.0.0', PROGRAM_CONFIG['listen_port'])
     try:
-        server = ProxyServer('0.0.0.0', PROGRAM_CONFIG['listen_port'])
         server.start()
     except Exception as err:
         LOG.error(str(err))
