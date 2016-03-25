@@ -341,4 +341,10 @@ class ComputerGroup:
         else:
             return False
 
+    def count(self):
+        """
+        获得计算组成员个数
+        :return: 个数
+        """
+        return len(self._members)
 

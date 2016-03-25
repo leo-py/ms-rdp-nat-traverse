@@ -34,7 +34,7 @@ def config_logging(log_level=logging.DEBUG, log_name='debug.log'):
         filemode='a')
 
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(log_level)
     formatter = logging.Formatter('[%(asctime)s][%(module)-6s][line %(lineno) -d][%(levelname)s]: %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
@@ -72,8 +72,8 @@ def get_all_listen_ports():
             elif sys_type == "Darwin":
                 listen_ports.add(int(column[3].split('.')[-1]))
             else:
-                LOG.info('未能识别的操作系统类型')
-    LOG.info('listen_ports: {}'.format(listen_ports))
+                LOG.debug('未能识别的操作系统类型')
+    LOG.debug('listen_ports: {}'.format(listen_ports))
     return listen_ports
 
 
