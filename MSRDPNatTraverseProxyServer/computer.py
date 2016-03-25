@@ -5,11 +5,11 @@
 # 博客：http://www.cnblogs.com/chriscabin
 # 主页：https://www.github.com/chrisleegit
 # 邮箱：christopherlee1993@outlook.com
-# 功能：
-# 参数：
+# 功能：把计算机信息相关的封装到该类中,统一管理
+# 参数：无
 # 版本：0.1
 # 备注：无
-# 日志：
+# 日志：无
 
 
 class Computer(object):
