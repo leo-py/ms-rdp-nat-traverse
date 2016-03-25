@@ -245,7 +245,7 @@ def response(content):
     """
     resp = dict()
     resp["response"] = content
-    return dumps(content)
+    return dumps(resp)
 
 
 def parse(request):
