@@ -109,14 +109,19 @@ def get_tunnel_port(content):
         return -1
 
     if COMPUTER_GROUP.has_member(content['id']):
-        while True:
-            ports = get_all_listen_ports()
-            LOG.debug('正在监听的端口号: {}'.format(ports))
-            port = get_rand_num(10000, 20000)
-            if port not in ports:
-                COMPUTER_GROUP.get_member(content['id']).tunnel_port = port
-                LOG.debug('生成合法的端口号: {}'.format(port))
-                return port
+        if content['value']:
+            while True:
+                ports = get_all_listen_ports()
+                LOG.debug('正在监听的端口号: {}'.format(ports))
+                port = get_rand_num(10000, 20000)
+                if port not in ports:
+                    COMPUTER_GROUP.get_member(content['id']).tunnel_port = port
+                    LOG.debug('生成合法的端口号: {}'.format(port))
+                    return port
+        else:
+            port = COMPUTER_GROUP.get_member(content['id']).tunnel_port
+            LOG.info('读取tunnel_port: {}'.format(port))
+            return port
     else:
         LOG.error("分组中不存在的id: {}".format(content['id']))
         return -1
@@ -138,6 +143,27 @@ def post_tunnel_port(content):
         return True
     else:
         LOG.error("分组中不存在的id: {}".format(content['id']))
+        return False
+
+
+def get_tunnel_status(content):
+    """
+    请求查询指定id的计算机隧道状态,即要求建立的端口号有没有正在被监听
+    :param content:
+    :return:
+    """
+    LOG.debug('调用: get_tunnel_status')
+    if not isinstance(content, dict):
+        LOG.error("消息内容格式不正确: {}".format(content))
+        return False
+
+    if COMPUTER_GROUP.has_member(content['id']):
+        LOG.info('隧道端口号: {}'.format(COMPUTER_GROUP.get_member(content['id']).tunnel_port))
+        status = COMPUTER_GROUP.get_member(content['id']).tunnel_port in get_all_listen_ports()
+        LOG.debug('隧道状态: {}'.format(status))
+        return status
+    else:
+        LOG.error('分组中不存在的id: {}'.format(content['id']))
         return False
 
 
@@ -231,6 +257,28 @@ def post_keep_alive_count(content):
     else:
         LOG.error("分组中不存在的id: {}".format(content['id']))
         return False
+
+
+def get_online_computer_list(content):
+    """
+    获取当前在线的计算列表
+    :param content: 具体内容
+    :return:列表
+    """
+    LOG.debug('调用: get_online_computer_list')
+    if not isinstance(content, dict):
+        LOG.error("消息内容格式不正确: {}".format(content))
+        return False
+
+    online_list = dict()
+    for item in COMPUTER_GROUP.get_members().values():
+        if isinstance(item, Computer):
+            # 必须要过滤掉申请查询者的信息,返回其他在线用户
+            if item.id != content['id']:
+                online_list[item.id] = item.name
+
+    return online_list
+
 
 '''
 处理协议解析部分函数
@@ -327,6 +375,8 @@ def handle_request(request):
             content = request['get']
             if key_equals(content, 'id'):
                 return response(get_computer_id(content))
+            elif key_equals(content, 'online_list'):
+                return response(get_online_computer_list(content))
             elif key_equals(content, 'control_request'):
                 return response(get_control_request(content))
             elif key_equals(content, 'tunnel_port'):
@@ -337,6 +387,8 @@ def handle_request(request):
                 return response(get_peered_remote_id(content))
             elif key_equals(content, 'keep_alive_count'):
                 return response(get_keep_alive_count(content))
+            elif key_equals(content, 'tunnel_status'):
+                return response(get_tunnel_status(content))
             else:
                 return response(False)
         elif is_post_request(request):

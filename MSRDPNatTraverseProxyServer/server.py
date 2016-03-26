@@ -11,7 +11,7 @@
 # 备注：无
 # 日志：无
 import socket
-from threading import Thread, Timer
+from threading import Thread
 from protocols import *
 from config import *
 from time import sleep
@@ -24,7 +24,7 @@ PROGRAM_CONFIG = {
 }
 
 # 检查在线状况的时间间隔, 单位为秒
-CHECK_INTERVAL = 5
+CHECK_INTERVAL = 6
 
 
 def check_alive_thread():
