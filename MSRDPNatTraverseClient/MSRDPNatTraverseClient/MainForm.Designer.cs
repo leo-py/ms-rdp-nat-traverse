@@ -33,6 +33,8 @@
             this.服务器ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.EditServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ChangeServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.EditLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SaveLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AboutProgramToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.machineNameTextBox = new System.Windows.Forms.TextBox();
@@ -59,12 +61,10 @@
             this.tabControl = new System.Windows.Forms.TabControl();
             this.tabPageLocal = new System.Windows.Forms.TabPage();
             this.tabPageRemote = new System.Windows.Forms.TabPage();
-            this.EditLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.SaveLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.groupBoxOnlineMachine = new System.Windows.Forms.GroupBox();
-            this.listBox1 = new System.Windows.Forms.ListBox();
-            this.upddateRemteMachineListButton = new System.Windows.Forms.Button();
             this.controlButton = new System.Windows.Forms.Button();
+            this.updateOnlineListButton = new System.Windows.Forms.Button();
+            this.groupBoxOnlineMachine = new System.Windows.Forms.GroupBox();
+            this.remoteComputerListBox = new System.Windows.Forms.ListBox();
             this.menuStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -103,6 +103,18 @@
             this.ChangeServerToolStripMenuItem.Name = "ChangeServerToolStripMenuItem";
             resources.ApplyResources(this.ChangeServerToolStripMenuItem, "ChangeServerToolStripMenuItem");
             this.ChangeServerToolStripMenuItem.Click += new System.EventHandler(this.ChangeServerToolStripMenuItem_Click);
+            // 
+            // EditLocalMachineToolStripMenuItem
+            // 
+            this.EditLocalMachineToolStripMenuItem.Name = "EditLocalMachineToolStripMenuItem";
+            resources.ApplyResources(this.EditLocalMachineToolStripMenuItem, "EditLocalMachineToolStripMenuItem");
+            this.EditLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.EditLocalMachineToolStripMenuItem_Click_1);
+            // 
+            // SaveLocalMachineToolStripMenuItem
+            // 
+            this.SaveLocalMachineToolStripMenuItem.Name = "SaveLocalMachineToolStripMenuItem";
+            resources.ApplyResources(this.SaveLocalMachineToolStripMenuItem, "SaveLocalMachineToolStripMenuItem");
+            this.SaveLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.SaveLocalMachineToolStripMenuItem_Click);
             // 
             // 帮助ToolStripMenuItem
             // 
@@ -302,47 +314,11 @@
             // tabPageRemote
             // 
             this.tabPageRemote.Controls.Add(this.controlButton);
-            this.tabPageRemote.Controls.Add(this.upddateRemteMachineListButton);
+            this.tabPageRemote.Controls.Add(this.updateOnlineListButton);
             this.tabPageRemote.Controls.Add(this.groupBoxOnlineMachine);
             resources.ApplyResources(this.tabPageRemote, "tabPageRemote");
             this.tabPageRemote.Name = "tabPageRemote";
             this.tabPageRemote.UseVisualStyleBackColor = true;
-            // 
-            // EditLocalMachineToolStripMenuItem
-            // 
-            this.EditLocalMachineToolStripMenuItem.Name = "EditLocalMachineToolStripMenuItem";
-            resources.ApplyResources(this.EditLocalMachineToolStripMenuItem, "EditLocalMachineToolStripMenuItem");
-            this.EditLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.EditLocalMachineToolStripMenuItem_Click_1);
-            // 
-            // SaveLocalMachineToolStripMenuItem
-            // 
-            this.SaveLocalMachineToolStripMenuItem.Name = "SaveLocalMachineToolStripMenuItem";
-            resources.ApplyResources(this.SaveLocalMachineToolStripMenuItem, "SaveLocalMachineToolStripMenuItem");
-            this.SaveLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.SaveLocalMachineToolStripMenuItem_Click);
-            // 
-            // groupBoxOnlineMachine
-            // 
-            this.groupBoxOnlineMachine.Controls.Add(this.listBox1);
-            resources.ApplyResources(this.groupBoxOnlineMachine, "groupBoxOnlineMachine");
-            this.groupBoxOnlineMachine.Name = "groupBoxOnlineMachine";
-            this.groupBoxOnlineMachine.TabStop = false;
-            // 
-            // listBox1
-            // 
-            this.listBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.listBox1.FormattingEnabled = true;
-            resources.ApplyResources(this.listBox1, "listBox1");
-            this.listBox1.Items.AddRange(new object[] {
-            resources.GetString("listBox1.Items"),
-            resources.GetString("listBox1.Items1")});
-            this.listBox1.Name = "listBox1";
-            // 
-            // upddateRemteMachineListButton
-            // 
-            resources.ApplyResources(this.upddateRemteMachineListButton, "upddateRemteMachineListButton");
-            this.upddateRemteMachineListButton.Name = "upddateRemteMachineListButton";
-            this.upddateRemteMachineListButton.UseVisualStyleBackColor = true;
-            this.upddateRemteMachineListButton.Click += new System.EventHandler(this.upddateRemteMachineListButton_Click);
             // 
             // controlButton
             // 
@@ -350,6 +326,27 @@
             this.controlButton.Name = "controlButton";
             this.controlButton.UseVisualStyleBackColor = true;
             this.controlButton.Click += new System.EventHandler(this.controlButton_Click);
+            // 
+            // updateOnlineListButton
+            // 
+            resources.ApplyResources(this.updateOnlineListButton, "updateOnlineListButton");
+            this.updateOnlineListButton.Name = "updateOnlineListButton";
+            this.updateOnlineListButton.UseVisualStyleBackColor = true;
+            this.updateOnlineListButton.Click += new System.EventHandler(this.upddateRemteMachineListButton_Click);
+            // 
+            // groupBoxOnlineMachine
+            // 
+            this.groupBoxOnlineMachine.Controls.Add(this.remoteComputerListBox);
+            resources.ApplyResources(this.groupBoxOnlineMachine, "groupBoxOnlineMachine");
+            this.groupBoxOnlineMachine.Name = "groupBoxOnlineMachine";
+            this.groupBoxOnlineMachine.TabStop = false;
+            // 
+            // remoteComputerListBox
+            // 
+            this.remoteComputerListBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.remoteComputerListBox.FormattingEnabled = true;
+            resources.ApplyResources(this.remoteComputerListBox, "remoteComputerListBox");
+            this.remoteComputerListBox.Name = "remoteComputerListBox";
             // 
             // MainForm
             // 
@@ -418,9 +415,9 @@
         private System.Windows.Forms.ToolStripMenuItem EditLocalMachineToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem SaveLocalMachineToolStripMenuItem;
         private System.Windows.Forms.GroupBox groupBoxOnlineMachine;
-        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.ListBox remoteComputerListBox;
         private System.Windows.Forms.Button controlButton;
-        private System.Windows.Forms.Button upddateRemteMachineListButton;
+        private System.Windows.Forms.Button updateOnlineListButton;
     }
 }
 

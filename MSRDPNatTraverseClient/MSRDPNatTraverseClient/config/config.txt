@@ -1,0 +1,12 @@
+{
+  "AutoStartup": false,
+  "EnableBackgroundMode": false,
+  "Machine": {
+    "Name": "台式机 1",
+    "ID": 1688,
+    "RDPPort": 3389,
+    "Description": "示例：这是一台测试PC。"
+  },
+  "SelectedServerIndex": 0,
+  "ProxyServerListenPort": 9001
+}

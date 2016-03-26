@@ -123,7 +123,7 @@ namespace MSRDPNatTraverseClient
             serversListBox.Items.Clear();
             foreach (var server in list)
             {
-                serversListBox.Items.Add(string.Format("{0}({1})", server.Name, server.IPAdress));
+                serversListBox.Items.Add(string.Format("{0}({1})", server.Name, server.Hostname));
             }
         }
 
@@ -135,7 +135,7 @@ namespace MSRDPNatTraverseClient
             serverDescriptionTextBox.Text = server.Description;
             serverUserNameTextBox.Text = server.LoginName;
             portTextBox.Text = server.LoginPort.ToString();
-            serverIPTextBox.Text = server.IPAdress;
+            serverIPTextBox.Text = server.Hostname;
         }
 
         private void EditServerForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -168,7 +168,7 @@ namespace MSRDPNatTraverseClient
                         serverList[index].Name = tb.Text;
                         break;
                     case "ip":
-                        serverList[index].IPAdress = tb.Text;
+                        serverList[index].Hostname = tb.Text;
                         break;
                     case "port":
                         serverList[index].LoginPort = GetPort(tb.Text);

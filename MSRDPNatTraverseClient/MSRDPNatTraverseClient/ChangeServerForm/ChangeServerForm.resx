@@ -117,13 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="richTextBox1.Text" xml:space="preserve">
-    <value>版本：0.1.15
-作者：Christopher L
-邮箱：ChristopherLee1993@outlook.com
-说明：
-1. 该控制软件使用了开源工具`plink.exe`实现SSH反向隧道建立；
-2. 服务器存储的密码较为简单的加密方式，请妥善保护好主机，防止因密码泄露导致主机被破坏；
-3. 在安装了诸如360、金山等安全软件的机器上，请给予该软件在后台执行监听的权限；否则，可能出现无法与远程服务器建立连接等问题发生。</value>
-  </data>
 </root>

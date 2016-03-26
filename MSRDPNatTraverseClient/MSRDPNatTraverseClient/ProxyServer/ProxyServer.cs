@@ -10,7 +10,7 @@ namespace MSRDPNatTraverseClient.ProxyServer
     {
         #region 代理服务器的一些私有变量
         private string _name = "代理服务器";
-        private string _ipAddress = "example.com";
+        private string _hostname = "example.com";
         private int _loginPort = 22;
         private string _loginName = "root";
         private string _loginPassword = "password";
@@ -30,15 +30,15 @@ namespace MSRDPNatTraverseClient.ProxyServer
             }
         }
 
-        public string IPAdress
+        public string Hostname
         {
             get
             {
-                return this._ipAddress;
+                return this._hostname;
             }
             set
             {
-                this._ipAddress = ValidateValue(value, this._ipAddress);
+                this._hostname = ValidateValue(value, this._hostname);
             }
         }
 
@@ -101,7 +101,7 @@ namespace MSRDPNatTraverseClient.ProxyServer
             string description)
         {
             Name = name;
-            IPAdress = ipAddress;
+            Hostname = ipAddress;
             LoginName = loginName;
             LoginPassword = loginPassword ;
             Description = description;

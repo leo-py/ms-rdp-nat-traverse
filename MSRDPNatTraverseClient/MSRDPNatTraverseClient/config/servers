@@ -1,0 +1,27 @@
+{
+  "Name": "阿里云服务器 1",
+  "IPAdress": "112.74.78.151",
+  "LoginPort": 22,
+  "LoginName": "Chris",
+  "LoginPassword": "\u0013\t\u0001\u001a\u0004",
+  "Description": "示例：这是一台用于远程控制的代理服务器。"
+}
+|
+{
+  "Name": "阿里云服务器 2",
+  "IPAdress": "lingfeimo.com",
+  "LoginPort": 22,
+  "LoginName": "chris",
+  "LoginPassword": "\u0013\t\u0001\u001a\u0004",
+  "Description": "示例：这是一台用于远程控制的代理服务器。"
+}
+|
+{
+  "Name": "笔记本Mac OS X",
+  "IPAdress": "223.3.22.72",
+  "LoginPort": 22,
+  "LoginName": "Chris",
+  "LoginPassword": "\u0013\t\u0001\u001a\u0004",
+  "Description": "用来测试的笔记本。安装的是Mac OS X Yosemite系统。"
+}
+|

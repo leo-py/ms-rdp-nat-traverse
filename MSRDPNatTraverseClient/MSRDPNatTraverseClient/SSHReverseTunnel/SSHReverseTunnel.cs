@@ -24,7 +24,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         private readonly string PLINK_PROGRAM_PATH = @"util\plink.exe";
 
         private ProxyServer.ProxyServer _server = null;
-        private LocalMachine.LocalMachine _machine = null;
+        private Computer.Computer _machine = null;
 
         // 
         private int _tunnelPort = 10000;
@@ -46,7 +46,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         #endregion
 
         #region 公开的函数接口
-        public SSHReverseTunnel(LocalMachine.LocalMachine machine, ProxyServer.ProxyServer server, int tunnelPort)
+        public SSHReverseTunnel(Computer.Computer machine, ProxyServer.ProxyServer server, int tunnelPort)
         {
             _server = server;
             _machine = machine;
@@ -88,6 +88,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                 return false;
             }
         }
+
         #endregion
 
         #region 私有的函数接口
@@ -101,9 +102,9 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                 // 相关设置
                 cmdProcess.StartInfo.FileName = "cmd.exe";
                 cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
-                cmdProcess.StartInfo.RedirectStandardError = true;  // 重定向标准错误
+                cmdProcess.StartInfo.RedirectStandardError = false;  // 重定向标准错误
                 cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
-                cmdProcess.StartInfo.RedirectStandardOutput = true; // 获取输出信息
+                cmdProcess.StartInfo.RedirectStandardOutput = false; // 获取输出信息
                 cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
 
                 // 启动程序
@@ -114,17 +115,18 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                     PLINK_PROGRAM_PATH,
                     _server.LoginPassword,
                     _server.LoginPort,
-                    _server.IPAdress,
+                    "0.0.0.0",
                     _tunnelPort,
                     "127.0.0.1",
                     _machine.RDPPort,
                     _server.LoginName,
-                    _server.IPAdress);
+                    _server.Hostname);
 
                 cmdProcess.StandardInput.WriteLine(cmdStr);
-
                 // 延时等待进程启动
                 System.Threading.Thread.Sleep(100);
+
+                cmdProcess.StandardInput.WriteLine("y");
 
                 // 返回启动后的plink进程
                 return GetLastStartedProcessByName("plink");
