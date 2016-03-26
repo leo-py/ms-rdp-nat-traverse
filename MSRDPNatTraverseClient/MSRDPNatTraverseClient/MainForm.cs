@@ -22,43 +22,50 @@ namespace MSRDPNatTraverseClient
 {
     public partial class MainForm : Form
     {
-        #region global variables or constants
-        private Computer.Computer localMachine = null;
+        #region 一些使用到的全局变量
+        /// <summary>
+        /// 本地计算机的对象实例
+        /// </summary>
+        private Computer.Computer localComputer = null;
+
+        /// <summary>
+        /// 配置对象实例
+        /// </summary>
         private Config.Config programConfig = null;
-        private ProxyServer.ProxyServer server = null;
+
+        /// <summary>
+        /// 代理服务器对象实例
+        /// </summary>
+        private ProxyServer.ProxyServer proxyServer = null;
+
+        /// <summary>
+        /// 两个特殊线程
+        /// </summary>
+        private Thread keepAliveThread = null;
+        private Thread queryStatusThread = null;
+
+        /// <summary>
+        /// 取消线程的执行
+        /// </summary>
+        CancellationTokenSource cts = null;
+
+        /// <summary>
+        /// 在线计算机列表
+        /// </summary>
+        private List<int> onlineComputerList = new List<int>();
+
+        // tunnel列表，可以存放备用隧道。防止连接失败。
+        List<SSHReverseTunnel.SSHReverseTunnel> tunnelList = new List<SSHReverseTunnel.SSHReverseTunnel>();
         #endregion
         public MainForm()
         {
             InitializeComponent();
 
-            // 读取默认的配置信息
-            programConfig = FileOperation.ReadConfig();
-
-            if (programConfig != null)
-            {
-                if (programConfig.Machine != null)
-                {
-                    localMachine = programConfig.Machine;
-                }
-                else
-                {
-                    localMachine = new Computer.Computer();
-                    programConfig.Machine = localMachine;
-                }
-            }
-            else
-            {
-                // 做一些初始化的工作
-                localMachine = new Computer.Computer();
-                server = new ProxyServer.ProxyServer();
-                programConfig = new Config.Config(autoStartupCheckBox.Checked,
-                    closeWithoutQuitCheckBox.Checked, localMachine, -1, 9000);
-            }
-
             // 显示这些信息
-            ApplyConfig(programConfig);
+            LoadConfig();
         }
 
+        #region 菜单项及按钮等事件处理函数集合
         /// <summary>
         /// 编辑菜单点击事件
         /// </summary>
@@ -187,25 +194,47 @@ namespace MSRDPNatTraverseClient
             var bt = sender as Button;
             if (bt != null)
             {
-                if (remoteMachineListBox.SelectedIndex == -1)
+                if (bt.Text == "连接")
                 {
-                    return;
-                }
-                int remoteId = int.Parse(remoteMachineListBox.SelectedItem.ToString().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)[0]);
-                Debug.WriteLine(string.Format("连接远程主机：{0}", remoteId));
-
-                if (bt.Text.Equals("连接"))
-                {
-                    if (await ConnectRemoteMachineAsync(remoteId))
+                    if (remoteComputerListBox.SelectedIndex == -1)
                     {
-                        bt.Text = "断开";
+                        return;
                     }
+
+                    var remoteId = onlineComputerList[remoteComputerListBox.SelectedIndex];
+                    localComputer.PeeredId = remoteId;
+
+                    // 准备在另个线程启动进度条
+                    var dic = new Dictionary<string, string>();
+                    dic["title"] = "正在请求远程控制";
+                    dic["content"] = string.Format("正在向远程计算机({0})请求控制，请稍等...", remoteId);
+                    var t = new Thread(ShowProgressFormThread);
+                    t.Start(dic);
+
+                    if (await PrepareToControlRemoteComputerAsync(remoteId))
+                    {
+                        // 获取隧道端口
+                        int tunnelPort = await Client.GetTunnelPortAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false);
+                        if (tunnelPort != -1)
+                        {
+                            Debug.WriteLine("获取到远程计算机的隧道：" + tunnelPort.ToString());
+
+                            bt.Text = "断开";
+                            remoteComputerListBox.Enabled = false;
+                            t.Abort();
+                            MessageBox.Show("打开远程控制程序，输入：" + string.Format("{0}:{1}", proxyServer.Hostname, tunnelPort));
+                        }
+                        
+                    }
+                    t.Abort();
                 }
                 else
                 {
-                    if (await DisconnectRemoteMachineAsync(remoteId))
+                    if (await DisconnectToRemoteComputer(localComputer.PeeredId))
                     {
+                        Debug.WriteLine("断开连接");
                         bt.Text = "连接";
+                        remoteComputerListBox.Enabled = true;
                     }
                 }
             }
@@ -239,21 +268,17 @@ namespace MSRDPNatTraverseClient
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // 关闭所有已经打开的线程
-            foreach (var thr in customThreadDict)
-            {
-                thr.Value.Abort();
-            }
-
-            // 关闭打开的隧道
-            CloseAllSSHReverseTunnels();
-
             // 保存当前的配置信息
-            programConfig.Machine = localMachine;
+            programConfig.Computer = localComputer;
             FileOperation.SaveConfig(programConfig);
         }
 
-        #region proxy functions: do what the handlers what to
+        #endregion
+
+        #region 核心函数
+        /// <summary>
+        /// 编辑当前计算机信息
+        /// </summary>
         private void EditComputer()
         {
             // 将编辑窗口改为可写状态
@@ -262,6 +287,9 @@ namespace MSRDPNatTraverseClient
             RDPPortTextBox.ReadOnly = false;
         }
 
+        /// <summary>
+        /// 保存当前计算机信息
+        /// </summary>
         private void SaveComputer()
         {
             // 重置为只读状态
@@ -270,14 +298,17 @@ namespace MSRDPNatTraverseClient
             RDPPortTextBox.ReadOnly = true;
 
             // 保存所有信息
-            localMachine.Name = machineNameTextBox.Text;
-            localMachine.Description = machineDescriptionTextBox.Text;
-            localMachine.RDPPort = int.Parse(RDPPortTextBox.Text);
+            localComputer.Name = machineNameTextBox.Text;
+            localComputer.Description = machineDescriptionTextBox.Text;
+            localComputer.RDPPort = int.Parse(RDPPortTextBox.Text);
 
             // 告诉配置信息类
-            programConfig.Machine = localMachine;
+            programConfig.Computer = localComputer;
         }
 
+        /// <summary>
+        /// 编辑代理服务器
+        /// </summary>
         private void EditServer()
         {
             EditServerForm dialogForm = new EditServerForm();
@@ -291,10 +322,10 @@ namespace MSRDPNatTraverseClient
                 // 加载同名服务器最新信息
                 for (var i = 0; i < list.Count; i++)
                 {
-                    if (list[i].Name == server.Name)
+                    if (list[i].Name == proxyServer.Name)
                     {
-                        server = list[i];
-                        ShowProxyServerInfo(server);
+                        proxyServer = list[i];
+                        ShowProxyServerInfo(proxyServer);
 
                         // 同时更新配置
                         programConfig.SelectedServerIndex = i;
@@ -303,19 +334,22 @@ namespace MSRDPNatTraverseClient
                 }
 
                 // 不存在的话，那么就尝试使用第一个
-                server = list[0];
-                ShowProxyServerInfo(server);
+                proxyServer = list[0];
+                ShowProxyServerInfo(proxyServer);
                 // 同时更新配置
                 programConfig.SelectedServerIndex = 0;
             }
             else
             {
-                server = new ProxyServer.ProxyServer();
-                ShowProxyServerInfo(server);
+                proxyServer = new ProxyServer.ProxyServer();
+                ShowProxyServerInfo(proxyServer);
                 programConfig.SelectedServerIndex = -1;
             }
         }
 
+        /// <summary>
+        /// 更换代理服务器
+        /// </summary>
         private void ChangeServer()
         {
             ChangeServerForm form = new ChangeServerForm();
@@ -324,21 +358,29 @@ namespace MSRDPNatTraverseClient
                 var obj = form.SelectedServer;
                 if (obj != null)
                 {
-                    server = obj;
-                    ShowProxyServerInfo(server);
+                    proxyServer = obj;
+                    ShowProxyServerInfo(proxyServer);
                     // 更新配置信息
                     programConfig.SelectedServerIndex = form.SelectedServerIndex;
                 }
             }
         }
 
+        /// <summary>
+        /// 显示代理服务器信息
+        /// </summary>
+        /// <param name="server"></param>
         private void ShowProxyServerInfo(ProxyServer.ProxyServer server)
         {
             // 显示代理服务器信息
             serverNameTextBox.Text = server.Name;
-            serverIPTextBox.Text = string.Format("{0}:{1}", server.IPAdress, server.LoginPort);
+            serverIPTextBox.Text = string.Format("{0}:{1}", server.Hostname, server.LoginPort);
         }
 
+        /// <summary>
+        /// 显示计算机信息
+        /// </summary>
+        /// <param name="machine"></param>
         private void ShowComputerInfo(Computer.Computer machine)
         {
             machineNameTextBox.Text = machine.Name;
@@ -347,16 +389,27 @@ namespace MSRDPNatTraverseClient
             RDPPortTextBox.Text = machine.RDPPort.ToString();
         }
 
+        /// <summary>
+        /// 显示关于窗口
+        /// </summary>
         private void ShowAboutDialog()
         {
             (new AboutForm()).ShowDialog();
         }
 
+        /// <summary>
+        /// 自启动设置
+        /// </summary>
+        /// <param name="enable"></param>
         private void SetAutoStartup(bool enable)
         {
             programConfig.AutoStartup = enable;
         }
 
+        /// <summary>
+        /// 关闭后依然在后台运行
+        /// </summary>
+        /// <param name="enable"></param>
         private void SetCloseWithoutQuit(bool enable)
         {
             programConfig.EnableBackgroundMode = enable;
@@ -368,7 +421,6 @@ namespace MSRDPNatTraverseClient
         /// <param name="status"></param>
         private void SetServerConnectionStatus(bool status)
         {
-            machineIsOnline = status;
             if (status)
             {
                 serverStatusTextBox.Text = "连接正常";
@@ -380,50 +432,83 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
-        /// 存放的自定义的线程集合，便于统一管理
+        /// 客户端启动相关服务
         /// </summary>
-        private Dictionary<string, Thread> customThreadDict = new Dictionary<string, Thread>();
-
-        /// <summary>
-        /// 只有与服务器建立连接后才为true
-        /// </summary>
-        private bool machineIsOnline = false;
         private async void Start()
         {
-            localMachine.ID = await Client.GetComputerIdAsync("192.168.23.2", 9003);
-            await Client.PostComputerInformationAsync("192.168.23.2", 9003, localMachine);
-            try
-            {
-                var result = await Client.GetOnlineComputerListAsync("192.168.23.2", 9003);
-                if (result != null)
-                {
-                    var content = "";
-                    foreach (var item in result)
-                    {
-                        content += string.Format("id: {0}, name: {1}\n", item.Key, item.Value);
-                    }
+            // 根据协议要求，首先获取一个id，标记在线注册
+            localComputer.ID = await Client.GetComputerIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort);
 
-                    MessageBox.Show(content);
+            if (localComputer.ID != -1)
+            {
+                Debug.WriteLine("成功获取到id: " + localComputer.ID.ToString());
+
+                SetServerConnectionStatus(true);
+                // 更新显示
+                ShowComputerInfo(localComputer);
+
+                // 上传本机信息
+                if (await Client.PostComputerInformationAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer))
+                {
+                    Debug.WriteLine("成功上传本机信息到代理服务器中");
+
+                    // 创建两个线程分别负责检查在线状态和检查请求状态信息
+                    keepAliveThread = new Thread(KeepAliveThread);
+                    queryStatusThread = new Thread(QueryStatusThread);
+
+                    cts = new CancellationTokenSource();
+
+                    // 启动线程
+                    Debug.WriteLine("启动保持在线状态的线程");
+                    keepAliveThread.Start();
+
+                    Debug.WriteLine("启动查询本机状态请求的线程");
+                    queryStatusThread.Start();
+
+                    // 更新按钮的状态
+                    startButton.Enabled = false;
+                    stopButton.Enabled = true;
+                    updateOnlineListButton.Enabled = true;
+                    controlButton.Enabled = true;
+                }
+                else
+                {
+                    Debug.WriteLine("没能上传本机信息到代理服务器中");
                 }
             }
-            catch { }
-            MessageBox.Show((await (Client.GetKeepAliveCountAsync("192.168.23.2", 9003, localMachine.ID))).ToString());
-            MessageBox.Show((await (Client.PostKeepAliveCountAsync("192.168.23.2", 9003, localMachine.ID, 100))).ToString());
-            MessageBox.Show((await (Client.GetKeepAliveCountAsync("192.168.23.2", 9003, localMachine.ID))).ToString());
+            else
+            {
+                Debug.WriteLine("获取id失败");
+                SetServerConnectionStatus(false);
+            }
         }
 
+        /// <summary>
+        /// 客户端停止相关服务
+        /// </summary>
         private void Stop()
         {
-            var tunnel = new MSRDPNatTraverseClient.SSHReverseTunnel.SSHReverseTunnel(localMachine, server, 11812);
-            tunnel.Start();
+            // 停止两个特殊线程
+            if (cts != null)
+            {
+                cts.Cancel();
+            }
 
-            tunnelList.Add(tunnel);
+            CloseAllSSHReverseTunnels();
+
+            startButton.Enabled = true;
+            stopButton.Enabled = false;
+            updateOnlineListButton.Enabled = false;
+            controlButton.Enabled = false;
         }
 
+        /// <summary>
+        /// 客户端退出，并停止所有服务
+        /// </summary>
         private void Quit()
         {
-            //QueryTunnelStatus();
-            //this.Close();
+            Stop();
+            this.Close();
         }
 
         /// <summary>
@@ -431,525 +516,337 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         private async void UpdateRemoteMachineList()
         {
-            Dictionary<int, string> list = await GetRemoteMachineList(localMachine.ID);
-            if (list == null)
-            {
-                return;
-            }
+            // 向服务器请求获取列表
+            var dict = await Client.GetOnlineComputerListAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
 
-            remoteMachineListBox.Items.Clear();
-            foreach (var item in list)
+            if (dict != null)
             {
-                remoteMachineListBox.Items.Add(string.Format("{0}    {1}", item.Key, item.Value));
+                remoteComputerListBox.Items.Clear();
+                onlineComputerList.Clear();
+                for (int i = 0; i < dict.Count; i++)
+                {
+                    remoteComputerListBox.Items.Add(string.Format("{0}. {1}    {2}", 
+                        i + 1, dict.ElementAt(i).Key, dict.ElementAt(i).Value));
+                    onlineComputerList.Add(dict.ElementAt(i).Key);
+                }
             }
         }
 
         /// <summary>
-        /// 完成和远程主机连接的过程
+        /// 关闭所有正在启动的plink进程，停用隧道。
+        /// </summary>
+        private void CloseAllSSHReverseTunnels()
+        {
+            //foreach (var tunnel in tunnelList)
+            //{
+            //    tunnel.Stop();
+            //}
+
+            Debug.WriteLine("关闭所有隧道连接");
+            foreach (var item in Process.GetProcessesByName("plink"))
+            {
+                item.Kill();
+            }
+        }
+
+        #endregion
+
+        #region 处理远程控制连接和断开等相关函数
+        private SSHReverseTunnel.SSHReverseTunnel tunnel = null;
+
+        /// <summary>
+        /// 被控端会要求自己准备建立连接被控制
+        /// </summary>
+        /// <returns></returns>
+        private async Task<bool> PrepareToBeUnderControlAsync()
+        {
+            // 存在控制请求后，会选择开始进行隧道建立
+            // 首先，获得一个准许的隧道端口号
+            var tunnelPort = await Client.GetTunnelPortAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, true);
+
+            // 确保端口号ok
+            if (tunnelPort != -1)
+            {
+                // 启动本地隧道进程，尝试和远程代理服务器建立隧道
+                tunnel = new SSHReverseTunnel.SSHReverseTunnel(localComputer, proxyServer, tunnelPort);
+                if (tunnel.Start())
+                {
+                    // 实验表明，此处必须要延时等待一下，否则可能建立隧道会失败
+                    Thread.Sleep(1000);
+
+                    // 最多尝试查询次数
+                    int tryCount = 5;
+                    bool status = false;
+                    while (tryCount != 0)
+                    {
+                        // 隧道进程成功启动后，我们需要向远程服务器查询有没有成功建立隧道端口
+                        status = await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
+
+                        if (status)
+                        {
+                            Debug.WriteLine("隧道成功建立，端口号为：" + tunnelPort.ToString());
+                        }
+                        Thread.Sleep(500);
+                        tryCount--;
+                    }
+
+                    if (status)
+                    {
+                        // 隧道成功建立，此时应当清除掉控制请求
+                        if (await Client.PostControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, false))
+                        {
+                            Debug.WriteLine("远程控制请求已经得到处理");
+                            if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, true))
+                            {
+                                tunnelList.Add(tunnel);
+                                Debug.WriteLine("已经标记为正在被控制状态");
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 请求准备与远程计算机建立连接
         /// </summary>
         /// <param name="remoteId"></param>
         /// <returns></returns>
-        private async Task<bool> ConnectRemoteMachineAsync(int remoteId)
+        private async Task<bool> PrepareToControlRemoteComputerAsync(int remoteId)
         {
-            // 第一步，向远程主机发送请求，要求连接到主机remoteId上
-            if (await RequestToBuildConnectionWithOnlineMachineAsync(localMachine.ID, remoteId))
+            // 首先，要检查远程计算机是否正在被控制中
+            if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
             {
-                Debug.WriteLine("远程服务器已经收到消息，并向远程主机发送邀请");
-
-                // 第二步，等待远程主机建立隧道
-                int tryCount = 10;
-                while (await QueryTunnelStatusAsync(remoteId))
-                {
-                    Thread.Sleep(500);
-                    if (tryCount-- == 0)
-                    {
-                        return false;
-                    }
-                }
-
-                Debug.WriteLine("已经建立了隧道，准备等待连接");
-                // 获取远程主机的IP和端口号
-                var result = await GetPeeredRemoteMachineAddressAsync(remoteId);
-
-                MessageBox.Show("请打开微软远程控制程序，输入地址：" + result);
-
-                return true;
+                MessageBox.Show(string.Format("计算机(id: {0})正在被其他计算机远程控制中，拒绝请求！", remoteId));
+                return false;
             }
             else
             {
-                Debug.WriteLine("请求连接失败");
-                return false;
+                // 把需要控制的计算机的控制请求设置为true
+                if (await Client.PostControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, true))
+                {
+                    // 等待对方响应请求
+                    int tryCount = 100;
+                    while (true)
+                    {
+                        if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
+                        {
+                            Debug.WriteLine("远程计算机的隧道已经成功建立，可以被远程访问。");
+                            return true;
+                        }
+                        tryCount--;
+                        if (tryCount == 0)
+                        {
+                            return false;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                }
+                else
+                {
+                    // 可能是网络断开等原因，没有成功邀请
+                    MessageBox.Show(string.Format("远程计算机(id: {0})没有成功收到邀请，请确保双方网络正常！", remoteId));
+                    return false;
+                }
             }
         }
 
         /// <summary>
-        /// 断开与远程主机的连接
+        /// 关闭与远程计算机的配对
         /// </summary>
         /// <param name="remoteId"></param>
-        private async Task<bool> DisconnectRemoteMachineAsync(int remoteId)
+        /// <returns></returns>
+        private async Task<bool> DisconnectToRemoteComputer(int remoteId)
         {
-            // 只需要告诉远程主机关闭隧道连接即可
-            // 具体方法：通过协议，修改远程主机的tunnel_port属性，
-            // 远程主机检查到该tunnel_status为false时，无论是否建立连接，都
-            // 会强制关闭隧道，关闭连接
-            bool result = await ResetTunnelPortRequestAsync(remoteId);
-            return result;
+            if (remoteId != -1)
+            {
+                // 直接向对方发送释放控制请求即可
+                if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false))
+                {
+                    Debug.WriteLine("已经发送了断开请求，等待对方断开连接。");
+                    MessageBox.Show(string.Format("已经断开与远程计算机({0})的连接!", localComputer.PeeredId));
+                    localComputer.PeeredId = -1;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
+        #endregion
 
+        #region 后台轮询和保持在线状态线程
         /// <summary>
-        /// 标记隧道是否已经打开
+        /// 该后台线程处理函数会定时查询计算机有没有控制请求等状态，供客户端使用
         /// </summary>
-        private bool tunnelIsOpen = false;
-        private async void QueryRemoteControlRequestThread()
+        /// <param name=""></param>
+        private async void QueryStatusThread()
         {
             while (true)
             {
-                // 只有在线，才会发送查询消息
-                if (machineIsOnline)
+                if (cts.Token.IsCancellationRequested)
                 {
-                    if (tunnelIsOpen)
+                    Debug.WriteLine("关闭线程：QueryStatusThread " + queryStatusThread.ManagedThreadId);
+                    break;
+                }
+
+                // 查询有没有正在被控制
+                // 如果计算机一直被控制中，将会被锁定，而无法被其他计算机连接
+                if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                {
+                    // 查询隧道状态
+                    if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
                     {
-                        // 但端口建立后，就轮询隧道状态，但隧道不存在后，就关闭当前的进程
-                        if (await QueryTunnelStatusAsync(localMachine.ID))
-                        {
-                            Debug.WriteLine("隧道仍然正常");
-                        }
-                        else
-                        {
-                            Debug.WriteLine("隧道断开");
-                            // 关闭隧道进程
-                            CloseAllSSHReverseTunnels();
-                            tunnelIsOpen = false;
-                        }
+                        Debug.WriteLine("隧道状态正常");
+                        Debug.WriteLine("本机正在被控制中");
                     }
                     else
                     {
-                        if (await QueryRemoteControlRequestAsync(localMachine.ID))
+                        // 重新启动隧道
+                        CloseAllSSHReverseTunnels();
+                        tunnel.Start();
+                    }
+                }
+                else
+                {
+                    bool ck = true;
+                    // 查询有没有控制请求
+                    if (await Client.GetControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                    {
+                        if (await PrepareToBeUnderControlAsync())
                         {
-                            Debug.WriteLine("收到远程连接请求");
-
-                            // 根据协议要求，需要向服务器申请得到一个可用的代理隧道端口
-                            int port = await GetAvailableTunnelPortAsync(localMachine.ID);
-
-                            if (port != -1)
-                            {
-                                Debug.WriteLine("获得隧道端口：" + port.ToString());
-
-                                //接下来会开始建立隧道
-                                SSHReverseTunnel.SSHReverseTunnel tunnel = new SSHReverseTunnel.SSHReverseTunnel(localMachine, server, port);
-
-                                if (tunnel.Start())
-                                {
-                                    Debug.WriteLine("本地建立隧道进程启动");
-
-                                    // 延时30s查询有没有成功建立隧道。
-                                    Thread.Sleep(2500);
-
-                                    // 向服务器询问隧道有没有建立成功
-                                    if (await QueryTunnelStatusAsync(localMachine.ID))
-                                    {
-                                        Debug.WriteLine(string.Format("建立隧道成功，地址：{0}:{1}", server.IPAdress, port));
-                                        tunnelIsOpen = true;
-                                        tunnelList.Add(tunnel);
-
-                                        // 此时告诉服务器，已经处理了请求的连接
-                                        if (await ClearRemoteControlRequestAsync(localMachine.ID))
-                                        {
-                                            Debug.WriteLine("反向隧道已经成功建立，并且可以从远程登录到本机");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        tunnel.Stop();
-                                    }
-                                }
-                            }
+                            ck = false;
+                            Debug.WriteLine("准备建立连接工作已经完毕，等待对方远程登录。");
                         }
                         else
                         {
-                            Debug.WriteLine("没有远程连接请求");
+                            Debug.WriteLine("准备建立连接工作失败！");
+                        }
+                    }
+
+                    if (ck)
+                    {
+                        if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                        {
+                            CloseAllSSHReverseTunnels();
                         }
                     }
                 }
-                // 延时等待一段时间继续查询，目前为5s
-                Thread.Sleep(5 * 1000);
+                //
+                // 每隔2s查询一次状态
+                //
+                Thread.Sleep(2 * 1000);
             }
         }
-        #endregion
 
-        #region core
-        private void ApplyConfig(Config.Config conf)
+        /// <summary>
+        /// 该线程会定时更新服务器上的keep_alive_count值，防止因为被服务器递减为零后，认为超时并下线本机
+        /// </summary>
+        private async void KeepAliveThread()
         {
-            if (conf != null)
+            while (true)
             {
-                // 显示本机的有关信息
-                ShowComputerInfo(conf.Machine);
-
-                // checkbox状态
-                autoStartupCheckBox.Checked = conf.AutoStartup;
-                closeWithoutQuitCheckBox.Checked = conf.EnableBackgroundMode;
-
-                // 显示代理服务器信息
-                if (conf.SelectedServerIndex != -1)
+                if (cts.Token.IsCancellationRequested)
                 {
-                    var serverList = FileOperation.ReadServerList();
-                    if (serverList.Count > 0)
+                    Debug.WriteLine("关闭线程：KeepAliveThread " + keepAliveThread.ManagedThreadId);
+                    break;
+                }
+
+                if (localComputer.ID != -1)
+                {
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 10))
                     {
-                        if (conf.SelectedServerIndex < serverList.Count)
-                        {
-                            server = serverList[conf.SelectedServerIndex];
-                        }
-                        else
-                        {
-                            server = serverList[0];
-                        }
-                        ShowProxyServerInfo(server);
-                    }  
+                        Debug.WriteLine("我还在线！");
+                    }
                 }
+                // 每隔10s更新一次
+                // 服务器会在30s收不到更新，自动判断为下线
+                Thread.Sleep(10 * 1000);
+            }
+        }
+
+        /// <summary>
+        /// 专门用来显示进度的线程
+        /// </summary>
+        private void ShowProgressFormThread(object obj)
+        {
+            Dictionary<string, string> dict = (Dictionary<string, string>)obj;
+
+            if (dict != null)
+            {
+                var form = new ProgressForm(dict["title"], dict["content"]);
+                form.ShowDialog();
             }
         }
         #endregion
 
-        // tunnel列表，可以存放备用隧道。防止连接失败。
-        List<SSHReverseTunnel.SSHReverseTunnel> tunnelList = new List<SSHReverseTunnel.SSHReverseTunnel>();
-
-        private void CloseAllSSHReverseTunnels()
+        #region 其他函数
+        private void LoadConfig()
         {
-            foreach (var tunnel in tunnelList)
+            // 读取默认的配置信息
+            programConfig = FileOperation.ReadConfig();
+
+            if (programConfig != null)
             {
-                tunnel.Stop();
-            }
-        }
-
-        #region 网络服务协议处理有关
-        /// <summary>
-        /// 发送消息的结构
-        /// </summary>
-        class RequestMsg
-        {
-            public string function;
-            public object content;
-        }
-
-        class RequestMsgWithId : RequestMsg
-        {
-            public int id;
-        }
-
-        class Response
-        {
-            public bool isResultEffective;   // 表示结果能否使用
-            public object Result;            // 返回的结果
-        }
-
-        /// <summary>
-        /// 执行标准的协议请求，返回固定格式的应答。
-        /// </summary>
-        /// <param name="function"></param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        private async Task<object> ExecuteProtocalRequestAsync<T>(string function, object content)
-        {
-            // 构建消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsg()
-            {
-                function = function,
-                content = content
-            }, Formatting.Indented);
-
-            // 发送消息，等待应答
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            // 判断并返回响应
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, T>>(resp);
-
-            if (responseDict.Count == 1 && responseDict.ContainsKey("response"))
-            {
-                return responseDict["response"];
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// 执行标准的协议请求，返回固定格式的应答。
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="function"></param>
-        /// <param name="id"></param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        private async Task<object> ExecuteProtocalRequestAsync<T>(string function, int id, object content)
-        {
-            // 构建消息
-            var sendMsg = JsonConvert.SerializeObject(new RequestMsgWithId()
-            {
-                function = function,
-                id = id,
-                content = content
-            }, Formatting.Indented);
-
-            // 发送消息，等待应答
-            var resp = await ClientSendMessageAsync(sendMsg);
-
-            // 判断并返回响应
-            var responseDict = JsonConvert.DeserializeObject<Dictionary<string, T>>(resp);
-
-            if (responseDict != null && responseDict.Count == 1 && responseDict.ContainsKey("response"))
-            {
-                return responseDict["response"];
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// 请求获取MachineID，服务器会在收到请求后为该请求机器分配一个唯一的ID
-        /// </summary>
-        /// <returns></returns>
-        private async Task<int> RequestMachineIdAsync()
-        {
-            var result = await ExecuteProtocalRequestAsync<int>("get", "machine_id");
-
-            if (result != null)
-            {
-                return(int)(result);
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        /// <summary>
-        /// 向代理服务器发送本机信息
-        /// </summary>
-        /// <param name="machine"></param>
-        /// <returns></returns>
-        private async Task<bool> UploadMachineInfoToProxyServerAsync(Computer.Computer machine)
-        {
-            var result = await ExecuteProtocalRequestAsync<bool>("upload", machine);
-
-            if (result != null)
-            {
-                return (bool)(result);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 请求与在线用户建立连接，注意，该函数执行后，不保证隧道建立成功
-        /// 因为可能远程主机掉线、或者正在被其他主机连接，因为也会拒绝连接
-        /// </summary>
-        /// <param name="local"></param>
-        /// <param name="remoteMachineId"></param>
-        /// <returns></returns>
-        private async Task<bool> RequestToBuildConnectionWithOnlineMachineAsync(int localMachineId, int remoteMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<bool>("connect_remote", localMachineId, remoteMachineId);
-
-            if (result != null)
-            {
-                return (bool)(result);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 该函数用于向服务器查询已经尝试建立成功的配对远程计算机的地址
-        /// </summary>
-        /// <param name="remoteMachineId"></param>
-        /// <returns></returns>
-        private async Task<string> GetPeeredRemoteMachineAddressAsync(int remoteMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<string>("get", remoteMachineId, "remote_machine_address");
-
-            if (result != null)
-            {
-                return (string)(result);
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// 客户端请求建立一条隧道，但是需要得到一个合法的端口地址在服务器上监听
-        /// </summary>
-        /// <param name="localMachineId"></param>
-        /// <returns></returns>
-        private async Task<int> GetAvailableTunnelPortAsync(int localMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<int>("get", localMachineId, "available_port");
-
-            if (result != null)
-            {
-                return (int)(result);
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        /// <summary>
-        /// 查询已经尝试建立隧道的状态
-        /// </summary>
-        /// <param name="localMachineId"></param>
-        /// <returns></returns>
-        private async Task<bool> QueryTunnelStatusAsync(int localMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<bool>("query", localMachineId, "tunnel_status");
-
-            if (result != null)
-            {
-                return (bool)(result);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 查询是否有其他机器要求与自身建立连接请求
-        /// </summary>
-        /// <param name="localMachineId"></param>
-        /// <returns></returns>
-        private async Task<bool> QueryRemoteControlRequestAsync(int localMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<bool>("query", localMachineId, "remote_control_request");
-
-            if (result != null)
-            {
-               return (bool)(result);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 告诉代理服务器，本机已经接收到并且处理完远程连接请求，并且此时的隧道也已经建立成功
-        /// </summary>
-        /// <param name="localMachineId"></param>
-        /// <returns></returns>
-        private async Task<bool> ClearRemoteControlRequestAsync(int localMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<bool>("clear", localMachineId, "remote_control_request");
-
-            if (result != null)
-            {
-                return (bool)(result);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 清除主机的标志信息：隧道的状态
-        /// </summary>
-        /// <param name="localMachineId"></param>
-        /// <returns></returns>
-        private async Task<bool> ResetTunnelPortRequestAsync(int machineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<bool>("reset", machineId, "tunnel_status");
-
-            if (result != null)
-            {
-                return (bool)(result);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 向服务器请求获得当前所有注册并且在线的机器列表
-        /// </summary>
-        /// <param name="localMachieId"></param>
-        /// <returns></returns>
-        private async Task<Dictionary<int, string>> GetRemoteMachineList(int localMachineId)
-        {
-            var result = await ExecuteProtocalRequestAsync<Dictionary<int, string>>("get", localMachineId, "online_machine_list");
-
-            if (result != null)
-            {
-                return (Dictionary<int, string>)(result);
-            }
-            else
-            {
-                return null;
-            }
-        }
-        #endregion
-
-        #region TCP通信相关函数
-        /// <summary>
-        /// 远程监听端口
-        /// </summary>
-        private readonly int remotePort = 9000;
-
-        /// <summary>
-        /// TCP客户端
-        /// 更新：修改为支持异步调用的方法
-        /// </summary>
-        /// <param name="requestMsg"></param>
-        /// <returns></returns>
-        private async Task<string> ClientSendMessageAsync(string requestMsg)
-        {
-            TcpClient client = new TcpClient();
-            IPAddress remoteIp = IPAddress.Parse(server.IPAdress);
-            string response = "";
-            await Task.Run(new Action(() =>
-            {
-                #region 客户端请求以及等待响应代码
-                try
+                if (programConfig.Computer != null)
                 {
-                    client.Connect(remoteIp, programConfig.ProxyServerListenPort);
-
-                    // 获取发送流，然后发送消息
-                    var stream = client.GetStream();
-
-                    byte[] outBuffer = Encoding.UTF8.GetBytes(requestMsg.Trim());
-                    //Debug.WriteLine(string.Format("\n**************************************************************"));
-                    //Debug.WriteLine(string.Format("发送：{0}\n", requestMsg));
-                    stream.Write(outBuffer, 0, outBuffer.Length);
-                    //Thread sendThread = new Thread(ClientSendThread);
-                    //sendThread.Start(client.SendBufferSize);
-
-                    // 延时等待响应结果。
-                    Thread.Sleep(200);
-                    byte[] inBuffer = new byte[1024];
-                    stream.Read(inBuffer, 0, 1024);
-                    response = Encoding.UTF8.GetString(inBuffer).Trim();
-                    //Debug.WriteLine(string.Format("\n接收：{0}\n", response));
-                    //Debug.WriteLine(string.Format("\n**************************************************************\n"));
-                    stream.Close();
-                    client.Close();
+                    localComputer = programConfig.Computer;
                 }
-                catch
-                { }
-                #endregion
-            }));
-            return response.Replace('\0', ' ').Trim();
+                else
+                {
+                    localComputer = new Computer.Computer();
+                    programConfig.Computer = localComputer;
+                }
+            }
+            else
+            {
+                // 做一些初始化的工作
+                localComputer = new Computer.Computer();
+                proxyServer = new ProxyServer.ProxyServer();
+                programConfig = new Config.Config(autoStartupCheckBox.Checked,
+                    closeWithoutQuitCheckBox.Checked, localComputer, -1, 9000);
+            }
+            // 显示本机的有关信息
+            ShowComputerInfo(programConfig.Computer);
+
+            // checkbox状态
+            autoStartupCheckBox.Checked = programConfig.AutoStartup;
+            closeWithoutQuitCheckBox.Checked = programConfig.EnableBackgroundMode;
+
+            // 显示代理服务器信息
+            if (programConfig.SelectedServerIndex != -1)
+            {
+                var serverList = FileOperation.ReadServerList();
+                if (serverList.Count > 0)
+                {
+                    if (programConfig.SelectedServerIndex < serverList.Count)
+                    {
+                        proxyServer = serverList[programConfig.SelectedServerIndex];
+                    }
+                    else
+                    {
+                        proxyServer = serverList[0];
+                    }
+                    ShowProxyServerInfo(proxyServer);
+                }
+            }
+            else
+            {
+                // 打开编辑窗口，提示用户添加服务器
+                MessageBox.Show("没有可以选择的代理服务器，请自行添加代理服务器后更换。");
+                EditServer();
+                ChangeServer();
+            }
         }
         #endregion
+
 
     }
 }

@@ -21,7 +21,7 @@ namespace MSRDPNatTraverseClient.Config
         #region 私有变量
         private bool autoStartUp = false;
         private bool enableBackgroundMode = false;
-        Computer.Computer localMachine = null;
+        Computer.Computer localComputer = null;
         private int selectedServerIndex = -1;
         private int proxyServerListenPort = 9000;
         #endregion
@@ -51,15 +51,15 @@ namespace MSRDPNatTraverseClient.Config
             }
         }
 
-        public Computer.Computer Machine
+        public Computer.Computer Computer
         {
             get
             {
-                return localMachine;
+                return localComputer;
             }
             set
             {
-                localMachine = value;
+                localComputer = value;
             }
         }
 
@@ -92,13 +92,13 @@ namespace MSRDPNatTraverseClient.Config
         public Config() { }
         public Config(bool autoStartup, 
             bool enableBackgroundMode, 
-            Computer.Computer machine, 
+            Computer.Computer computer, 
             int selectedServerIndex,
             int proxyServerListenPort)
         {
             AutoStartup = autoStartup;
             EnableBackgroundMode = enableBackgroundMode;
-            Machine = machine;
+            Computer = computer;
             SelectedServerIndex = selectedServerIndex;
             ProxyServerListenPort = proxyServerListenPort;
         }

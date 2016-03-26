@@ -129,10 +129,10 @@ namespace MSRDPNatTraverseClient.MainFom
         /// <param name="port"></param>
         /// <param name="computerId"></param>
         /// <returns></returns>
-        public static async Task<int> GetTunnelPortAsync(string host, int port, int computerId)
+        public static async Task<int> GetTunnelPortAsync(string host, int port, int computerId, bool generateNewId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "tunnel_port", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "tunnel_port", computerId, generateNewId).ToLower();
 
             var result = await SendProtocalRequestAsync<int>(host, port, content);
 
@@ -158,6 +158,30 @@ namespace MSRDPNatTraverseClient.MainFom
         {
             // 构建要发送的消息
             var content = BuildRequestContent("post", "tunnel_port", computerId, value).ToLower();
+
+            var result = await SendProtocalRequestAsync<bool>(host, port, content);
+
+            if (result != null)
+            {
+                return (bool)result;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 查询指定id的隧道端口号是否正常监听
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
+        /// <param name="computerId"></param>
+        /// <returns></returns>
+        public static async Task<bool> GetTunnelStatusAsync(string host, int port, int computerId)
+        {
+            // 构建要发送的消息
+            var content = BuildRequestContent("get", "tunnel_status", computerId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -299,10 +323,10 @@ namespace MSRDPNatTraverseClient.MainFom
         /// <param name="host"></param>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static async Task<Dictionary<int, string>> GetOnlineComputerListAsync(string host, int port)
+        public static async Task<Dictionary<int, string>> GetOnlineComputerListAsync(string host, int port, int computerId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "online_list", -1, null).ToLower();
+            var content = BuildRequestContent("get", "online_list", computerId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<Dictionary<int, string>>(host, port, content);
 
@@ -390,6 +414,7 @@ namespace MSRDPNatTraverseClient.MainFom
                 // 转换成string类型
                 string response = Encoding.UTF8.GetString(readBuffer);
                 Debug.WriteLine("接收：" + response);
+                Debug.WriteLine("\n");
 
                 stream.Close();
                 client.Close();

@@ -22,7 +22,7 @@ namespace MSRDPNatTraverseClient
 
             foreach (var item in serverList)
             {
-                serverComboBox.Items.Add(string.Format("{0}({1})", item.Name, item.IPAdress));
+                serverComboBox.Items.Add(string.Format("{0}({1})", item.Name, item.Hostname));
             }
 
             if (serverList.Count > 0)

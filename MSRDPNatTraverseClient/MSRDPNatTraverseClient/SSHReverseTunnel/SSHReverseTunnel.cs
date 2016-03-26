@@ -88,6 +88,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                 return false;
             }
         }
+
         #endregion
 
         #region 私有的函数接口
@@ -119,7 +120,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                     "127.0.0.1",
                     _machine.RDPPort,
                     _server.LoginName,
-                    _server.IPAdress);
+                    _server.Hostname);
 
                 cmdProcess.StandardInput.WriteLine(cmdStr);
                 // 延时等待进程启动
