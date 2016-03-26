@@ -68,45 +68,46 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AboutForm.cs">
+    <Compile Include="AboutForm\AboutForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="AboutForm.Designer.cs">
+    <Compile Include="AboutForm\AboutForm.Designer.cs">
       <DependentUpon>AboutForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="ChangeServerForm.cs">
+    <Compile Include="ChangeServerForm\ChangeServerForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ChangeServerForm.Designer.cs">
+    <Compile Include="ChangeServerForm\ChangeServerForm.Designer.cs">
       <DependentUpon>ChangeServerForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Config\Config.cs" />
-    <Compile Include="EditServerForm.cs">
+    <Compile Include="EditServerForm\EditServerForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="EditServerForm.Designer.cs">
+    <Compile Include="EditServerForm\EditServerForm.Designer.cs">
       <DependentUpon>EditServerForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="LocalMachine\LocalMachine.cs" />
+    <Compile Include="Computer\Computer.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Client.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyServer\ProxyServer.cs" />
     <Compile Include="SSHReverseTunnel\SSHReverseTunnel.cs" />
     <Compile Include="Utilities\FileOperation.cs" />
     <Compile Include="Utilities\TextEncryption.cs" />
-    <EmbeddedResource Include="AboutForm.resx">
+    <EmbeddedResource Include="AboutForm\AboutForm.resx">
       <DependentUpon>AboutForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ChangeServerForm.resx">
+    <EmbeddedResource Include="ChangeServerForm\ChangeServerForm.resx">
       <DependentUpon>ChangeServerForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="EditServerForm.resx">
+    <EmbeddedResource Include="EditServerForm\EditServerForm.resx">
       <DependentUpon>EditServerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
@@ -150,6 +151,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

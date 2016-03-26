@@ -24,7 +24,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         private readonly string PLINK_PROGRAM_PATH = @"util\plink.exe";
 
         private ProxyServer.ProxyServer _server = null;
-        private LocalMachine.LocalMachine _machine = null;
+        private Computer.Computer _machine = null;
 
         // 
         private int _tunnelPort = 10000;
@@ -46,7 +46,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         #endregion
 
         #region 公开的函数接口
-        public SSHReverseTunnel(LocalMachine.LocalMachine machine, ProxyServer.ProxyServer server, int tunnelPort)
+        public SSHReverseTunnel(Computer.Computer machine, ProxyServer.ProxyServer server, int tunnelPort)
         {
             _server = server;
             _machine = machine;

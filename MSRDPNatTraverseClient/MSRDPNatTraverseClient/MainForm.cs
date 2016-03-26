@@ -15,14 +15,15 @@ using MSRDPNatTraverseClient.Utility;
 using MSRDPNatTraverseClient.SSHReverseTunnel;
 using Newtonsoft.Json;
 using System.Diagnostics;
-using MSRDPNatTraverseClient.LocalMachine;
+using MSRDPNatTraverseClient.Computer;
+using MSRDPNatTraverseClient.MainFom;
 
 namespace MSRDPNatTraverseClient
 {
     public partial class MainForm : Form
     {
         #region global variables or constants
-        private LocalMachine.LocalMachine localMachine = null;
+        private Computer.Computer localMachine = null;
         private Config.Config programConfig = null;
         private ProxyServer.ProxyServer server = null;
         #endregion
@@ -41,14 +42,14 @@ namespace MSRDPNatTraverseClient
                 }
                 else
                 {
-                    localMachine = new LocalMachine.LocalMachine();
+                    localMachine = new Computer.Computer();
                     programConfig.Machine = localMachine;
                 }
             }
             else
             {
                 // 做一些初始化的工作
-                localMachine = new LocalMachine.LocalMachine();
+                localMachine = new Computer.Computer();
                 server = new ProxyServer.ProxyServer();
                 programConfig = new Config.Config(autoStartupCheckBox.Checked,
                     closeWithoutQuitCheckBox.Checked, localMachine, -1, 9000);
@@ -58,35 +59,61 @@ namespace MSRDPNatTraverseClient
             ApplyConfig(programConfig);
         }
 
-        #region event_handlers for menus
-
+        /// <summary>
+        /// 编辑菜单点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void EditServerToolStripMenuItem_Click(object sender, EventArgs e)
         {
             EditServer();
         }
 
+        /// <summary>
+        /// 更换服务器菜单点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ChangeServerToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ChangeServer();
         }
 
+        /// <summary>
+        /// 关于菜单项点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AboutProgramToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ShowAboutDialog();
         }
 
+        /// <summary>
+        /// 编辑本地计算机菜单点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void EditLocalMachineToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
-            EditLocalMachine();
+            EditComputer();
         }
 
+        /// <summary>
+        /// 保存本地计算机菜单项点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SaveLocalMachineToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveLocalMachine();
+            SaveComputer();
         }
-        #endregion
 
-        #region event_handlers for program control region
+        /// <summary>
+        /// 开机启动选择事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void autoStartupCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             var cb = sender as CheckBox;
@@ -96,6 +123,11 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+        /// <summary>
+        /// 关闭窗口在后台运行点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void closeWithoutQuitCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             var cb = sender as CheckBox;
@@ -105,25 +137,51 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+        /// <summary>
+        /// 启动按钮单击
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void startButton_Click(object sender, EventArgs e)
         {
             Start();
         }
 
+        /// <summary>
+        /// 停止按钮
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void stopButton_Click(object sender, EventArgs e)
         {
             Stop();
         }
 
+        /// <summary>
+        /// 退出按钮
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void quitButton_Click(object sender, EventArgs e)
         {
             Quit();
         }
 
+        /// <summary>
+        /// 更新计算机列表
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void upddateRemteMachineListButton_Click(object sender, EventArgs e)
         {
             UpdateRemoteMachineList();
         }
+
+        /// <summary>
+        /// 控制按钮单击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void controlButton_Click(object sender, EventArgs e)
         {
             var bt = sender as Button;
@@ -153,6 +211,11 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+        /// <summary>
+        /// 计算机信息属性变化
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void machineInfoTextBox_ReadOnlyChanged(object sender, EventArgs e)
         {
             var tb = sender as TextBox;
@@ -169,6 +232,11 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+        /// <summary>
+        /// 主窗口关闭时的处理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // 关闭所有已经打开的线程
@@ -184,10 +252,9 @@ namespace MSRDPNatTraverseClient
             programConfig.Machine = localMachine;
             FileOperation.SaveConfig(programConfig);
         }
-        #endregion
 
         #region proxy functions: do what the handlers what to
-        private void EditLocalMachine()
+        private void EditComputer()
         {
             // 将编辑窗口改为可写状态
             machineNameTextBox.ReadOnly = false;
@@ -195,7 +262,7 @@ namespace MSRDPNatTraverseClient
             RDPPortTextBox.ReadOnly = false;
         }
 
-        private void SaveLocalMachine()
+        private void SaveComputer()
         {
             // 重置为只读状态
             machineNameTextBox.ReadOnly = true;
@@ -272,7 +339,7 @@ namespace MSRDPNatTraverseClient
             serverIPTextBox.Text = string.Format("{0}:{1}", server.IPAdress, server.LoginPort);
         }
 
-        private void ShowLocalMachineInfo(LocalMachine.LocalMachine machine)
+        private void ShowComputerInfo(Computer.Computer machine)
         {
             machineNameTextBox.Text = machine.Name;
             machineIDTextBox.Text = machine.ID.ToString();
@@ -323,45 +390,26 @@ namespace MSRDPNatTraverseClient
         private bool machineIsOnline = false;
         private async void Start()
         {
-            // 根据协议要求，首先需要获取一个ID
-            Debug.WriteLine(string.Format("客户端向代理服务器{0}({1}:{2})发送请求：获取一个唯一分配的ID", server.Name, server.IPAdress, remotePort));
-            var newId = await RequestMachineIdAsync();
-            if (newId == -1)
+            localMachine.ID = await Client.GetComputerIdAsync("192.168.23.2", 9003);
+            await Client.PostComputerInformationAsync("192.168.23.2", 9003, localMachine);
+            try
             {
-                // 表明没有获取到合法的ID，因此无法与代理服务器建立连接，故为断开连接状态
-                Debug.WriteLine("请求获取ID失败");
-                SetServerConnectionStatus(false);
-            }
-            else
-            {
-                // 成功获取到ID后，我们将会输出调试信息，查看获得的ID是多少
-                Debug.WriteLine(string.Format("客户端成功获取到ID: {0}", newId));
-
-                // 更新本机的ID，并同步显示在窗口中
-                localMachine.ID = newId;
-                ShowLocalMachineInfo(localMachine);
-
-                // 下面开始向服务器上传当前机器的信息
-                Debug.WriteLine("向代理服务器发送机器信息");
-                if (await UploadMachineInfoToProxyServerAsync(localMachine))
+                var result = await Client.GetOnlineComputerListAsync("192.168.23.2", 9003);
+                if (result != null)
                 {
-                    SetServerConnectionStatus(true);
-                    Debug.WriteLine("上传本机信息成功");
-
-                    // 启动两个子线程，分别用于查询远程请求状态和发送Keep-Alive消息，保证让服务器知道客户端的存在
-                    Debug.WriteLine("启动线程：定时查询远程连接请求");
-                    Thread thr1 = new Thread(QueryRemoteControlRequestThread);
-
-                    // 添加到列表中便于管理
-                    if (!customThreadDict.ContainsKey("remoteControlRequestThread"))
+                    var content = "";
+                    foreach (var item in result)
                     {
-                        customThreadDict.Add("remoteControlRequestThread", thr1);
-                        thr1.Start();
+                        content += string.Format("id: {0}, name: {1}\n", item.Key, item.Value);
                     }
-                    
+
+                    MessageBox.Show(content);
                 }
             }
-            
+            catch { }
+            MessageBox.Show((await (Client.GetKeepAliveCountAsync("192.168.23.2", 9003, localMachine.ID))).ToString());
+            MessageBox.Show((await (Client.PostKeepAliveCountAsync("192.168.23.2", 9003, localMachine.ID, 100))).ToString());
+            MessageBox.Show((await (Client.GetKeepAliveCountAsync("192.168.23.2", 9003, localMachine.ID))).ToString());
         }
 
         private void Stop()
@@ -535,7 +583,7 @@ namespace MSRDPNatTraverseClient
             if (conf != null)
             {
                 // 显示本机的有关信息
-                ShowLocalMachineInfo(conf.Machine);
+                ShowComputerInfo(conf.Machine);
 
                 // checkbox状态
                 autoStartupCheckBox.Checked = conf.AutoStartup;
@@ -682,7 +730,7 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         /// <param name="machine"></param>
         /// <returns></returns>
-        private async Task<bool> UploadMachineInfoToProxyServerAsync(LocalMachine.LocalMachine machine)
+        private async Task<bool> UploadMachineInfoToProxyServerAsync(Computer.Computer machine)
         {
             var result = await ExecuteProtocalRequestAsync<bool>("upload", machine);
 
