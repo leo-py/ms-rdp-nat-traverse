@@ -222,6 +222,26 @@ def get_peered_remote_id(content):
         return -1
 
 
+def post_peered_remote_id(content):
+    """
+    设置指定id计算机配对的id
+    :param content: 具体内容
+    :return: True/False
+    """
+    LOG.debug('调用: post_peered_remote_id')
+    if not isinstance(content, dict):
+        LOG.error("消息内容格式不正确: {}".format(content))
+        return -1
+
+    if COMPUTER_GROUP.has_member(content['id']):
+        COMPUTER_GROUP.get_member(content['id']).peered_remote_id = content['value']
+        LOG.debug("修改计算机({})的配对计算机为{}".format(content['id'], content['value']))
+        return True
+    else:
+        LOG.error("分组中不存在的id: {}".format(content['id']))
+        return False
+
+
 def get_keep_alive_count(content):
     """
     获取指定id的计算机的keep-alive计数值
@@ -254,6 +274,26 @@ def post_keep_alive_count(content):
     if COMPUTER_GROUP.has_member(content['id']):
         COMPUTER_GROUP.get_member(content['id']).keep_alive_count = content['value']
         return True
+    else:
+        LOG.error("分组中不存在的id: {}".format(content['id']))
+        return False
+
+
+def get_is_online(content):
+    """
+    查询指定的id的计算机是否在线
+    :param content: 具体内容
+    :return: True/False
+    """
+    LOG.debug('调用: get_is_online')
+    if not isinstance(content, dict):
+        LOG.error("消息内容格式不正确: {}".format(content))
+        return False
+
+    if COMPUTER_GROUP.has_member(content['id']):
+        is_online = COMPUTER_GROUP.has_member(content['id'])
+        LOG.debug('计算机({})在线状态: {}'.format(content['id'], is_online))
+        return is_online
     else:
         LOG.error("分组中不存在的id: {}".format(content['id']))
         return False
@@ -389,6 +429,8 @@ def handle_request(request):
                 return response(get_keep_alive_count(content))
             elif key_equals(content, 'tunnel_status'):
                 return response(get_tunnel_status(content))
+            elif key_equals(content, 'is_online'):
+                return response(get_is_online(content))
             else:
                 return response(False)
         elif is_post_request(request):
@@ -404,6 +446,8 @@ def handle_request(request):
                 return response(post_is_under_control(content))
             elif key_equals(content, 'keep_alive_count'):
                 return response(post_keep_alive_count(content))
+            elif key_equals(content, 'peered_remote_id'):
+                return response(post_peered_remote_id(content))
             else:
                 return response(False)
     else:
