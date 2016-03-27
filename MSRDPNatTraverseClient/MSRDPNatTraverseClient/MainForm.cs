@@ -653,7 +653,6 @@ namespace MSRDPNatTraverseClient
 
         #region 处理远程控制连接和断开等相关函数
         private SSHReverseTunnel.SSHReverseTunnel tunnel = null;
-        private Thread threadProgress;
 
         /// <summary>
         /// 被控端会要求自己准备建立连接被控制
@@ -720,10 +719,6 @@ namespace MSRDPNatTraverseClient
             // 首先，要检查远程计算机是否正在被控制中
             if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
             {
-                if (threadProgress != null)
-                {
-                    threadProgress.Abort();
-                }
                 MessageBox.Show(string.Format("计算机(id: {0})正在被其他计算机远程控制中，拒绝请求！", remoteId));
                 return false;
             }
