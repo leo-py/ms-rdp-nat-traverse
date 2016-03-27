@@ -205,12 +205,6 @@ namespace MSRDPNatTraverseClient
                     localComputer.PeeredId = remoteId;
 
                     ShowStatusStrip(string.Format("正在向远程计算机({0})请求控制，请稍等...", remoteId));
-                    //// 准备在另个线程启动进度条
-                    //var dic = new Dictionary<string, string>();
-                    //dic["title"] = "正在请求远程控制";
-                    //dic["content"] = string.Format("正在向远程计算机({0})请求控制，请稍等...", remoteId);
-                    //threadProgress = new Thread(ShowProgressFormThread);
-                    //threadProgress.Start(dic);
 
                     if (await PrepareToControlRemoteComputerAsync(remoteId))
                     {
@@ -221,8 +215,9 @@ namespace MSRDPNatTraverseClient
                             Debug.WriteLine("获取到远程计算机的隧道：" + tunnelPort.ToString());
                             bt.Text = "断开";
                             remoteComputerListBox.Enabled = false;
-                            ShowStatusStrip(string.Format("计算机({0})可以远程登录，隧道端口为：{1}", remoteId, tunnelPort));
-                            MessageBox.Show("请打开远程控制桌面程序，输入: " + string.Format("{0}:{1}", proxyServer.Hostname, tunnelPort));
+                            ShowStatusStrip(string.Format("与远程计算机({0})已经建立连接", remoteId));
+                            //MessageBox.Show("请打开远程控制桌面程序，输入: " + string.Format("{0}:{1}", proxyServer.Hostname, tunnelPort));
+                            OpenRDPProgram(proxyServer.Hostname, tunnelPort);
                         }  
                     }
                     else
@@ -919,6 +914,29 @@ namespace MSRDPNatTraverseClient
         private void HideStatusStrip()
         {
             toolStripStatusLabelSpace.Visible = false;
+        }
+
+        /// <summary>
+        /// 自动打开远程桌面应用
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
+        private void OpenRDPProgram(string host, int port)
+        {
+            Process cmdProcess = new Process();
+
+            // 相关设置
+            cmdProcess.StartInfo.FileName = "cmd.exe";
+            cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
+            cmdProcess.StartInfo.RedirectStandardError = false;  // 重定向标准错误
+            cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
+            cmdProcess.StartInfo.RedirectStandardOutput = false; // 获取输出信息
+            cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
+
+            // 启动程序
+            cmdProcess.Start();
+
+            cmdProcess.StandardInput.WriteLine(string.Format("mstsc.exe /v {0}:{1}", host, port));
         }
         #endregion
 
