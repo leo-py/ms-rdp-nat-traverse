@@ -233,7 +233,7 @@ namespace MSRDPNatTraverseClient
                             Debug.WriteLine("获取到远程计算机的隧道：" + tunnelPort.ToString());
                             bt.Text = "断开";
                             remoteComputerListBox.Enabled = false;
-                            ShowStatusStrip(string.Format("与远程计算机({0})已经建立连接", remoteId));
+                            ShowStatusStrip(string.Format("与远程计算机({0})已经建立连接。地址：{1}:{2}", remoteId, proxyServer.Hostname, tunnelPort));
                             //MessageBox.Show("请打开远程控制桌面程序，输入: " + string.Format("{0}:{1}", proxyServer.Hostname, tunnelPort));
                             OpenRDPProgram(proxyServer.Hostname, tunnelPort);
                         }  
@@ -1058,25 +1058,20 @@ namespace MSRDPNatTraverseClient
 
         /// <summary>
         /// 自动打开远程桌面应用
+        /// 使用帮助：
+        /// /v 指定要连接的远程计算机
+        /// /span 将远程桌面的高度和宽度和本地计算机桌面进行匹配
+        /// /control 运行控制会话
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
         private void OpenRDPProgram(string host, int port)
         {
-            Process cmdProcess = new Process();
-
-            // 相关设置
-            cmdProcess.StartInfo.FileName = "cmd.exe";
-            cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
-            cmdProcess.StartInfo.RedirectStandardError = false;  // 重定向标准错误
-            cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
-            cmdProcess.StartInfo.RedirectStandardOutput = false; // 获取输出信息
-            cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
-
-            // 启动程序
-            cmdProcess.Start();
-
-            cmdProcess.StandardInput.WriteLine(string.Format("mstsc.exe /v {0}:{1}", host, port));
+            Process proc = new Process();
+            proc.StartInfo.FileName = "mstsc";
+            proc.StartInfo.Arguments = string.Format("/v {0}:{1} /span", host, port);
+            proc.StartInfo.CreateNoWindow = true;
+            proc.Start();
         }
 
         #endregion
