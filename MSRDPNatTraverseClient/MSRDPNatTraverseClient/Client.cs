@@ -269,6 +269,29 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
+        /// 设置指定id的配对计算机的id
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
+        /// <param name="computerId"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static async Task<bool> PostPeeredRemoteIdAsync(string host, int port, int computerId, int value)
+        {
+            // 构建要发送的消息
+            var content = BuildRequestContent("post", "peered_remote_id", computerId, value).ToLower();
+            var result = await SendProtocalRequestAsync<bool>(host, port, content);
+            if (result != null)
+            {
+                return (bool)result;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// 获取指定id的存活计数值
         /// </summary>
         /// <param name="host"></param>
@@ -304,6 +327,30 @@ namespace MSRDPNatTraverseClient.MainFom
         {
             // 构建要发送的消息
             var content = BuildRequestContent("post", "keep_alive_count", computerId, value).ToLower();
+
+            var result = await SendProtocalRequestAsync<bool>(host, port, content);
+
+            if (result != null)
+            {
+                return (bool)result;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 获取指定id的计算机是否在线
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
+        /// <param name="computerId"></param>
+        /// <returns></returns>
+        public static async Task<bool> GetIsOnlineAsync(string host, int port, int computerId)
+        {
+            // 构建要发送的消息
+            var content = BuildRequestContent("get", "is_online", computerId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
