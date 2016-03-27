@@ -1034,7 +1034,11 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         private void HideStatusStrip()
         {
-            toolStripStatusLabelSpace.Visible = false;
+            try
+            {
+                toolStripStatusLabelSpace.Visible = false;
+            }
+            catch { }
         }
 
         /// <summary>
