@@ -1,4 +1,5 @@
 #!/user/bin/python3
+# coding: utf-8
 # 文件：config.py
 # 作者：Christopher Lee
 # 博客：http://www.cnblogs.com/chriscabin
