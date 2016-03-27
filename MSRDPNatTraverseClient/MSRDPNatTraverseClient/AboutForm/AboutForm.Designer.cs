@@ -41,9 +41,9 @@
             this.label1.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label1.Location = new System.Drawing.Point(108, 9);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(225, 26);
+            this.label1.Size = new System.Drawing.Size(208, 26);
             this.label1.TabIndex = 0;
-            this.label1.Text = "微软远程控制——被控端";
+            this.label1.Text = "微软远程桌面 内网穿透";
             // 
             // richTextBox1
             // 
@@ -53,7 +53,7 @@
             this.richTextBox1.ReadOnly = true;
             this.richTextBox1.Size = new System.Drawing.Size(411, 221);
             this.richTextBox1.TabIndex = 1;
-            this.richTextBox1.Text = "版本：1.0\n作者：Christopher L\n邮箱：ChristopherLee1993@outlook.com\n说明：\n0. 请赋予该软件管理员权限，即使用管" +
+            this.richTextBox1.Text = "版本：1.2\n作者：Christopher L\n邮箱：ChristopherLee1993@outlook.com\n说明：\n0. 请赋予该软件管理员权限，即使用管" +
     "理员身份运行，否则可能无法成功与远程计算机建立连接；\n1. 该控制软件使用了开源工具`plink.exe`实现SSH反向隧道建立；\n2. 服务器存储的密码较为简" +
     "单的加密方式，请妥善保护好主机，防止因密码泄露导致主机被破坏。";
             // 
