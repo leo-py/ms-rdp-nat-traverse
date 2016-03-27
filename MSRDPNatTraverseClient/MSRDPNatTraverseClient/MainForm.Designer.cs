@@ -65,6 +65,10 @@
             this.updateOnlineListButton = new System.Windows.Forms.Button();
             this.groupBoxOnlineMachine = new System.Windows.Forms.GroupBox();
             this.remoteComputerListBox = new System.Windows.Forms.ListBox();
+            this.statusStrip = new System.Windows.Forms.StatusStrip();
+            this.toolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripProgressBar = new System.Windows.Forms.ToolStripProgressBar();
             this.menuStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -72,6 +76,7 @@
             this.tabPageLocal.SuspendLayout();
             this.tabPageRemote.SuspendLayout();
             this.groupBoxOnlineMachine.SuspendLayout();
+            this.statusStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -348,10 +353,37 @@
             resources.ApplyResources(this.remoteComputerListBox, "remoteComputerListBox");
             this.remoteComputerListBox.Name = "remoteComputerListBox";
             // 
+            // statusStrip
+            // 
+            this.statusStrip.BackColor = System.Drawing.SystemColors.Control;
+            this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusLabelSpace,
+            this.toolStripStatusLabel,
+            this.toolStripProgressBar});
+            resources.ApplyResources(this.statusStrip, "statusStrip");
+            this.statusStrip.Name = "statusStrip";
+            // 
+            // toolStripStatusLabelSpace
+            // 
+            this.toolStripStatusLabelSpace.Name = "toolStripStatusLabelSpace";
+            resources.ApplyResources(this.toolStripStatusLabelSpace, "toolStripStatusLabelSpace");
+            // 
+            // toolStripStatusLabel
+            // 
+            this.toolStripStatusLabel.ForeColor = System.Drawing.Color.Blue;
+            this.toolStripStatusLabel.Name = "toolStripStatusLabel";
+            resources.ApplyResources(this.toolStripStatusLabel, "toolStripStatusLabel");
+            // 
+            // toolStripProgressBar
+            // 
+            this.toolStripProgressBar.Name = "toolStripProgressBar";
+            resources.ApplyResources(this.toolStripProgressBar, "toolStripProgressBar");
+            // 
             // MainForm
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -375,6 +407,8 @@
             this.tabPageLocal.PerformLayout();
             this.tabPageRemote.ResumeLayout(false);
             this.groupBoxOnlineMachine.ResumeLayout(false);
+            this.statusStrip.ResumeLayout(false);
+            this.statusStrip.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -418,6 +452,10 @@
         private System.Windows.Forms.ListBox remoteComputerListBox;
         private System.Windows.Forms.Button controlButton;
         private System.Windows.Forms.Button updateOnlineListButton;
+        private System.Windows.Forms.StatusStrip statusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelSpace;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
+        private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
     }
 }
 
