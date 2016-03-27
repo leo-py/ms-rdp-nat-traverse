@@ -564,6 +564,9 @@ namespace MSRDPNatTraverseClient
                 {
                     Debug.WriteLine("没能上传本机信息到代理服务器中");
                 }
+
+                // 此后，隐藏主窗口
+                this.Close();
             }
             else
             {
@@ -996,6 +999,12 @@ namespace MSRDPNatTraverseClient
                     }
                     ShowProxyServerInfo(proxyServer);
                 }
+
+                // 检查是否需要自动启动
+                if (autoStartCheckBox.Checked)
+                {
+                    AutoStartService();
+                }
             }
             else
             {
@@ -1004,6 +1013,14 @@ namespace MSRDPNatTraverseClient
                 EditServer();
                 ChangeServer();
             }
+        }
+
+        /// <summary>
+        /// 自动启动服务
+        /// </summary>
+        private void AutoStartService()
+        {
+            Start();
         }
 
         /// <summary>
