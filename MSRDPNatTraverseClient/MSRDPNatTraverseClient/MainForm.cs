@@ -1058,6 +1058,10 @@ namespace MSRDPNatTraverseClient
 
         /// <summary>
         /// 自动打开远程桌面应用
+        /// 使用帮助：
+        /// /v 指定要连接的远程计算机
+        /// /span 将远程桌面的高度和宽度和本地计算机桌面进行匹配
+        /// /control 运行控制会话
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
@@ -1065,7 +1069,7 @@ namespace MSRDPNatTraverseClient
         {
             Process proc = new Process();
             proc.StartInfo.FileName = "mstsc";
-            proc.StartInfo.Arguments = string.Format("/v {0}:{1}", host, port);
+            proc.StartInfo.Arguments = string.Format("/v {0}:{1} /span", host, port);
             proc.StartInfo.CreateNoWindow = true;
             proc.Start();
         }
