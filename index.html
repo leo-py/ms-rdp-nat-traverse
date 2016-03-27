@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="微软远程桌面——内网穿透助手 : ">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>微软远程桌面——内网穿透助手</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/ChrisLeeGit/MSRDPNatTraverse">View on GitHub</a>
+
+          <h1 id="project_title">微软远程桌面——内网穿透助手</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/ChrisLeeGit/MSRDPNatTraverse/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/ChrisLeeGit/MSRDPNatTraverse/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="微软远程控制-内网穿透助手" class="anchor" href="#%E5%BE%AE%E8%BD%AF%E8%BF%9C%E7%A8%8B%E6%8E%A7%E5%88%B6-%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E5%8A%A9%E6%89%8B" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>微软远程控制 内网穿透助手</h1>
+
+<hr>
+
+<h2>
+<a id="说明" class="anchor" href="#%E8%AF%B4%E6%98%8E" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>说明</h2>
+
+<ul>
+<li>一般来说，同在一个局域网下的两个Windows计算机可以正常使用微软的远程桌面实现远程登录。但是，当两台计算机网络环境相对复杂，尤其是不在同一局域网下，就需要使用别的手段来实现访问了。</li>
+<li>本方案就是使用SSH连接到远程代理服务器，建立SSH反向隧道的方式实现无论在何种网络环境下，只要代理服务器工作正常，并且双方均可以与服务器正常交互，便可借助本客户端实现轻松实现远程控制。</li>
+<li>应用开发分为客户端软件开发和服务器软件开发。</li>
+</ul>
+
+<h2>
+<a id="简要工作原理" class="anchor" href="#%E7%AE%80%E8%A6%81%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>简要工作原理</h2>
+
+<ul>
+<li>在客户端中选中要进行远程控制的目标主机，在连接后，目标主机会收到远程控制请求；目标主机会自动建立反向隧道，将远程桌面端口(默认<code>3389</code>)映射到远程服务器的随机端口中。</li>
+<li>由于使用了随机分配的隧道端口，并且，端口号不是常用的，相对比较安全（寡人是这么认为的）；况且本地在完成控制后，目标主机也会自动断开隧道。</li>
+</ul>
+
+<h2>
+<a id="客户端软件" class="anchor" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%BD%AF%E4%BB%B6" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>客户端软件</h2>
+
+<ul>
+<li>客户端软件使用Visual C#开发，运行在.Net 4.5及以上平台的系统上，理论上支持Windows 7及以上系统，但是要确保.Net版本符合要求，否则无法运行本客户端。</li>
+<li>客户端实现中，借助于<code>plink.exe</code>（即<code>putty.exe</code>）的命令行版本实现免密码输入，建立反向SSH隧道的功能。</li>
+<li>客户端提供的功能说明：
+
+<ul>
+<li>
+<strong>注册</strong>：客户端在启动后，点击"启动"按钮，客户端会自动尝试与代理服务器联系，并获取ID，同时在代理服务器上存储自身的信息；完成“注册”过程；</li>
+<li>
+<strong>远程列表</strong>: 在“远程”页面中，点击“更新”按钮，可以拿取目前在线注册的计算机列表，将提供计算机ID和名称的显示；</li>
+<li>
+<strong>连接/断开</strong>: 本机可以选择远程主机，点击“连接”按钮后申请远程控制；当完成控制后，可以点击“断开”按钮，要求远程主机关闭隧道。</li>
+</ul>
+</li>
+<li>主要使用到的第三方库：<a href="https://github.com/JamesNK/Newtonsoft.Json">Newtonsoft.json</a>，有关该库的<code>license</code>请参见<code>Licese</code>目录</li>
+</ul>
+
+<h2>
+<a id="服务器软件" class="anchor" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%BD%AF%E4%BB%B6" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>服务器软件</h2>
+
+<ul>
+<li>服务器端采用了<code>Python 3</code>开发；</li>
+<li>服务器端程序会在启动后自动在指定端口（默认为9000）进行监听，并及时处理来自客户端的请求；</li>
+<li>服务器端在运行前，可以在配置文件中更改日志文件名称，以及输出日志的等级；默认日志等级为<code>DEBUG</code>。日志等级可以选择的项目包括：
+
+<ul>
+<li><code>DEBUG</code></li>
+<li><code>INFO</code></li>
+<li><code>ERROR</code></li>
+<li><code>WARN</code></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<a id="其他" class="anchor" href="#%E5%85%B6%E4%BB%96" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>其他</h2>
+
+<ul>
+<li>尚待更新...</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">微软远程桌面——内网穿透助手 maintained by <a href="https://github.com/ChrisLeeGit">ChrisLeeGit</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
