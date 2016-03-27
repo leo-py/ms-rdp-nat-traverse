@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.服务器ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -57,7 +58,7 @@
             this.stopButton = new System.Windows.Forms.Button();
             this.startButton = new System.Windows.Forms.Button();
             this.closeWithoutQuitCheckBox = new System.Windows.Forms.CheckBox();
-            this.autoStartupCheckBox = new System.Windows.Forms.CheckBox();
+            this.autoStartCheckBox = new System.Windows.Forms.CheckBox();
             this.tabControl = new System.Windows.Forms.TabControl();
             this.tabPageLocal = new System.Windows.Forms.TabPage();
             this.tabPageRemote = new System.Windows.Forms.TabPage();
@@ -69,6 +70,12 @@
             this.toolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripProgressBar = new System.Windows.Forms.ToolStripProgressBar();
+            this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
+            this.notifyIconContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.ControlWindowVisibilityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.StartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.StopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ExitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -77,6 +84,7 @@
             this.tabPageRemote.SuspendLayout();
             this.groupBoxOnlineMachine.SuspendLayout();
             this.statusStrip.SuspendLayout();
+            this.notifyIconContextMenuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -254,7 +262,7 @@
             this.groupBox3.Controls.Add(this.stopButton);
             this.groupBox3.Controls.Add(this.startButton);
             this.groupBox3.Controls.Add(this.closeWithoutQuitCheckBox);
-            this.groupBox3.Controls.Add(this.autoStartupCheckBox);
+            this.groupBox3.Controls.Add(this.autoStartCheckBox);
             resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.TabStop = false;
@@ -287,12 +295,12 @@
             this.closeWithoutQuitCheckBox.UseVisualStyleBackColor = true;
             this.closeWithoutQuitCheckBox.CheckedChanged += new System.EventHandler(this.closeWithoutQuitCheckBox_CheckedChanged);
             // 
-            // autoStartupCheckBox
+            // autoStartCheckBox
             // 
-            resources.ApplyResources(this.autoStartupCheckBox, "autoStartupCheckBox");
-            this.autoStartupCheckBox.Name = "autoStartupCheckBox";
-            this.autoStartupCheckBox.UseVisualStyleBackColor = true;
-            this.autoStartupCheckBox.CheckedChanged += new System.EventHandler(this.autoStartupCheckBox_CheckedChanged);
+            resources.ApplyResources(this.autoStartCheckBox, "autoStartCheckBox");
+            this.autoStartCheckBox.Name = "autoStartCheckBox";
+            this.autoStartCheckBox.UseVisualStyleBackColor = true;
+            this.autoStartCheckBox.CheckedChanged += new System.EventHandler(this.autoStartupCheckBox_CheckedChanged);
             // 
             // tabControl
             // 
@@ -379,6 +387,46 @@
             this.toolStripProgressBar.Name = "toolStripProgressBar";
             resources.ApplyResources(this.toolStripProgressBar, "toolStripProgressBar");
             // 
+            // notifyIcon
+            // 
+            this.notifyIcon.ContextMenuStrip = this.notifyIconContextMenuStrip;
+            resources.ApplyResources(this.notifyIcon, "notifyIcon");
+            this.notifyIcon.MouseClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseClick);
+            // 
+            // notifyIconContextMenuStrip
+            // 
+            this.notifyIconContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ControlWindowVisibilityToolStripMenuItem,
+            this.StartToolStripMenuItem,
+            this.StopToolStripMenuItem,
+            this.ExitToolStripMenuItem});
+            this.notifyIconContextMenuStrip.Name = "notifyIconContextMenuStrip";
+            resources.ApplyResources(this.notifyIconContextMenuStrip, "notifyIconContextMenuStrip");
+            // 
+            // ControlWindowVisibilityToolStripMenuItem
+            // 
+            this.ControlWindowVisibilityToolStripMenuItem.Name = "ControlWindowVisibilityToolStripMenuItem";
+            resources.ApplyResources(this.ControlWindowVisibilityToolStripMenuItem, "ControlWindowVisibilityToolStripMenuItem");
+            this.ControlWindowVisibilityToolStripMenuItem.Click += new System.EventHandler(this.ControlWindowVisibilityToolStripMenuItem_Click);
+            // 
+            // StartToolStripMenuItem
+            // 
+            this.StartToolStripMenuItem.Name = "StartToolStripMenuItem";
+            resources.ApplyResources(this.StartToolStripMenuItem, "StartToolStripMenuItem");
+            this.StartToolStripMenuItem.Click += new System.EventHandler(this.StartToolStripMenuItem_Click);
+            // 
+            // StopToolStripMenuItem
+            // 
+            resources.ApplyResources(this.StopToolStripMenuItem, "StopToolStripMenuItem");
+            this.StopToolStripMenuItem.Name = "StopToolStripMenuItem";
+            this.StopToolStripMenuItem.Click += new System.EventHandler(this.StopToolStripMenuItem_Click);
+            // 
+            // ExitToolStripMenuItem
+            // 
+            this.ExitToolStripMenuItem.Name = "ExitToolStripMenuItem";
+            resources.ApplyResources(this.ExitToolStripMenuItem, "ExitToolStripMenuItem");
+            this.ExitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
+            // 
             // MainForm
             // 
             resources.ApplyResources(this, "$this");
@@ -409,6 +457,7 @@
             this.groupBoxOnlineMachine.ResumeLayout(false);
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
+            this.notifyIconContextMenuStrip.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -433,7 +482,7 @@
         private System.Windows.Forms.TextBox machineIDTextBox;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.CheckBox closeWithoutQuitCheckBox;
-        private System.Windows.Forms.CheckBox autoStartupCheckBox;
+        private System.Windows.Forms.CheckBox autoStartCheckBox;
         private System.Windows.Forms.Button quitButton;
         private System.Windows.Forms.Button stopButton;
         private System.Windows.Forms.Button startButton;
@@ -456,6 +505,12 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelSpace;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
         private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
+        private System.Windows.Forms.NotifyIcon notifyIcon;
+        private System.Windows.Forms.ContextMenuStrip notifyIconContextMenuStrip;
+        private System.Windows.Forms.ToolStripMenuItem ControlWindowVisibilityToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem StartToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem StopToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ExitToolStripMenuItem;
     }
 }
 
