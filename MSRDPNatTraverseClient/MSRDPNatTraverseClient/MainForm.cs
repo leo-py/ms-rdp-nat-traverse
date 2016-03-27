@@ -169,8 +169,7 @@ namespace MSRDPNatTraverseClient
         /// <param name="e"></param>
         private void startButton_Click(object sender, EventArgs e)
         {
-            //Start();
-            OpenRDPProgram("wealllink.com", 10000);
+            Start();
         }
 
         /// <summary>
