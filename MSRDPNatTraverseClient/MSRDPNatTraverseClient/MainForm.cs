@@ -133,6 +133,12 @@ namespace MSRDPNatTraverseClient
             if (cb != null)
             {
                 SetAutoStartup(cb.Checked);
+                
+                // 但这个选中后，必须要保证选择另外一个隐藏而不退出
+                if (cb.Checked)
+                {
+                    closeWithoutQuitCheckBox.Checked = true;
+                }
             }
         }
 
@@ -147,6 +153,12 @@ namespace MSRDPNatTraverseClient
             if (cb != null)
             {
                 SetCloseWithoutQuit(cb.Checked);
+
+                // 当这一个项目取消后，保证不能自动启动服务
+                if (!cb.Checked)
+                {
+                    autoStartCheckBox.Checked = false;
+                }
             }
         }
 
@@ -566,7 +578,10 @@ namespace MSRDPNatTraverseClient
                 }
 
                 // 此后，隐藏主窗口
-                this.Close();
+                if (autoStartCheckBox.Checked)
+                {
+                    this.Close();
+                }
             }
             else
             {
