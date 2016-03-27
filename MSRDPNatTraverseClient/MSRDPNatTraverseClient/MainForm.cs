@@ -169,7 +169,8 @@ namespace MSRDPNatTraverseClient
         /// <param name="e"></param>
         private void startButton_Click(object sender, EventArgs e)
         {
-            Start();
+            //Start();
+            OpenRDPProgram("wealllink.com", 10000);
         }
 
         /// <summary>
@@ -1063,20 +1064,11 @@ namespace MSRDPNatTraverseClient
         /// <param name="port"></param>
         private void OpenRDPProgram(string host, int port)
         {
-            Process cmdProcess = new Process();
-
-            // 相关设置
-            cmdProcess.StartInfo.FileName = "cmd.exe";
-            cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
-            cmdProcess.StartInfo.RedirectStandardError = false;  // 重定向标准错误
-            cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
-            cmdProcess.StartInfo.RedirectStandardOutput = false; // 获取输出信息
-            cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
-
-            // 启动程序
-            cmdProcess.Start();
-
-            cmdProcess.StandardInput.WriteLine(string.Format("mstsc.exe /v {0}:{1}", host, port));
+            Process proc = new Process();
+            proc.StartInfo.FileName = "mstsc";
+            proc.StartInfo.Arguments = string.Format("/v {0}:{1}", host, port);
+            proc.StartInfo.CreateNoWindow = true;
+            proc.Start();
         }
 
         #endregion
