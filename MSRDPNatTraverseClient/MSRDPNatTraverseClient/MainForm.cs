@@ -56,6 +56,12 @@ namespace MSRDPNatTraverseClient
 
         // tunnel列表，可以存放备用隧道。防止连接失败。
         List<SSHReverseTunnel.SSHReverseTunnel> tunnelList = new List<SSHReverseTunnel.SSHReverseTunnel>();
+
+        /// <summary>
+        /// 标记能不能真的退出应用
+        /// </summary>
+        private bool canQuit = false;
+
         #endregion
         public MainForm()
         {
@@ -258,6 +264,68 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+
+        /// <summary>
+        /// 通知图标收到鼠标左键单击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void notifyIcon_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ControlWindowVisibilityToolStripMenuItem_Click(null, null);
+            }
+        }
+
+        /// <summary>
+        /// 控制窗口隐藏、显示的菜单项
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ControlWindowVisibilityToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Visible = !this.Visible;
+            if (this.Visible)
+            {
+                ControlWindowVisibilityToolStripMenuItem.Text = "隐藏窗口";
+            }
+            else
+            {
+                ControlWindowVisibilityToolStripMenuItem.Text = "显示窗口";
+            }
+        }
+
+        /// <summary>
+        /// 控制启动服务的菜单项
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void StartToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Start();
+        }
+
+        /// <summary>
+        /// 控制停止服务的菜单项
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void StopToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Stop();
+        }
+
+        /// <summary>
+        /// 控制退出的菜单项
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Quit();
+        }
+
         /// <summary>
         /// 主窗口关闭时的处理
         /// </summary>
@@ -265,9 +333,29 @@ namespace MSRDPNatTraverseClient
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // 保存当前的配置信息
-            programConfig.Computer = localComputer;
-            FileOperation.SaveConfig(programConfig);
+            // 检查是否真的要退出
+            if (canQuit)
+            {
+                // 保存当前的配置信息
+                programConfig.Computer = localComputer;
+                FileOperation.SaveConfig(programConfig);
+            }
+            else
+            {
+                // 检查要不要阻止退出而只是隐藏
+                if (closeWithoutQuitCheckBox.Checked)
+                {
+                    e.Cancel = true;
+                    ControlWindowVisibilityToolStripMenuItem_Click(null, null);
+                }
+                else
+                {
+                    Stop();
+                    // 保存当前的配置信息
+                    programConfig.Computer = localComputer;
+                    FileOperation.SaveConfig(programConfig);
+                }
+            }
         }
 
         #endregion
@@ -467,6 +555,10 @@ namespace MSRDPNatTraverseClient
                     stopButton.Enabled = true;
                     updateOnlineListButton.Enabled = true;
                     controlButton.Enabled = true;
+
+                    // 更新菜单的状态
+                    StartToolStripMenuItem.Enabled = false;
+                    StopToolStripMenuItem.Enabled = true;
                 }
                 else
                 {
@@ -495,10 +587,15 @@ namespace MSRDPNatTraverseClient
 
             CloseAllSSHReverseTunnels();
 
+            // 更新控件状态
             startButton.Enabled = true;
             stopButton.Enabled = false;
             updateOnlineListButton.Enabled = false;
             controlButton.Enabled = false;
+
+            // 更新菜单的状态
+            StartToolStripMenuItem.Enabled = true;
+            StopToolStripMenuItem.Enabled = false;
         }
 
         /// <summary>
@@ -507,6 +604,7 @@ namespace MSRDPNatTraverseClient
         private void Quit()
         {
             Stop();
+            canQuit = true;
             this.Close();
         }
 
@@ -675,24 +773,35 @@ namespace MSRDPNatTraverseClient
         {
             if (remoteId != -1)
             {
-                // 直接向对方发送释放控制请求即可
-                ShowStatusStrip(string.Format("正在向计算机({0})发送断开连接请求...", remoteId));
-                if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false))
+                // 要判断对方是否下线，不要无谓地发送取消消息
+                if (await Client.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
                 {
-                    Debug.WriteLine("已经发送了断开请求，等待对方断开连接。");
-                    MessageBox.Show(string.Format("已经断开与远程计算机({0})的连接!", localComputer.PeeredId));
-                    localComputer.PeeredId = -1;
-                    HideStatusStrip();
-                    return true;
+                    // 直接向对方发送释放控制请求即可
+                    ShowStatusStrip(string.Format("正在向计算机({0})发送断开连接请求...", remoteId));
+                    if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false))
+                    {
+                        Debug.WriteLine("已经发送了断开请求，等待对方断开连接。");
+                        MessageBox.Show(string.Format("已经断开与远程计算机({0})的连接!", localComputer.PeeredId));
+                        localComputer.PeeredId = -1;
+                        HideStatusStrip();
+                        return true;
+                    }
+                    else
+                    {
+                        HideStatusStrip();
+                        return false;
+                    }
                 }
                 else
                 {
+                    Debug.WriteLine("对方已经离线，无需发送断开连接消息");
                     HideStatusStrip();
-                    return false;
+                    return true;
                 }
             }
             else
             {
+                HideStatusStrip();
                 return false;
             }
         }
@@ -861,14 +970,14 @@ namespace MSRDPNatTraverseClient
                 // 做一些初始化的工作
                 localComputer = new Computer.Computer();
                 proxyServer = new ProxyServer.ProxyServer();
-                programConfig = new Config.Config(autoStartupCheckBox.Checked,
+                programConfig = new Config.Config(autoStartCheckBox.Checked,
                     closeWithoutQuitCheckBox.Checked, localComputer, -1, 9000);
             }
             // 显示本机的有关信息
             ShowComputerInfo(programConfig.Computer);
 
             // checkbox状态
-            autoStartupCheckBox.Checked = programConfig.AutoStartup;
+            autoStartCheckBox.Checked = programConfig.AutoStartup;
             closeWithoutQuitCheckBox.Checked = programConfig.EnableBackgroundMode;
 
             // 显示代理服务器信息
@@ -938,8 +1047,8 @@ namespace MSRDPNatTraverseClient
 
             cmdProcess.StandardInput.WriteLine(string.Format("mstsc.exe /v {0}:{1}", host, port));
         }
-        #endregion
 
+        #endregion
 
     }
 }
