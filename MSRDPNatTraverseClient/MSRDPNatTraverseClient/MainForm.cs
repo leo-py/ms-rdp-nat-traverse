@@ -233,7 +233,7 @@ namespace MSRDPNatTraverseClient
                             Debug.WriteLine("获取到远程计算机的隧道：" + tunnelPort.ToString());
                             bt.Text = "断开";
                             remoteComputerListBox.Enabled = false;
-                            ShowStatusStrip(string.Format("与远程计算机({0})已经建立连接", remoteId));
+                            ShowStatusStrip(string.Format("与远程计算机({0})已经建立连接。地址：{1}:{2}", remoteId, proxyServer.Hostname, tunnelPort));
                             //MessageBox.Show("请打开远程控制桌面程序，输入: " + string.Format("{0}:{1}", proxyServer.Hostname, tunnelPort));
                             OpenRDPProgram(proxyServer.Hostname, tunnelPort);
                         }  
