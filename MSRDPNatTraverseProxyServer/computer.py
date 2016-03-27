@@ -33,7 +33,7 @@ class Computer(object):
         self._tunnel_port = -1
         self._is_under_control = False
         self._peered_remote_id = -1
-        self._keep_alive_count = 10
+        self._keep_alive_count = 5
 
     @property
     def id(self):
