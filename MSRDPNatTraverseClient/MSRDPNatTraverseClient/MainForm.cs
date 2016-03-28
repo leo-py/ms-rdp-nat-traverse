@@ -749,7 +749,7 @@ namespace MSRDPNatTraverseClient
                     {
                         Debug.WriteLine("设置目标计算机配对id成功");
                         // 等待对方响应请求
-                        int tryCount = 100;
+                        int tryCount = 3;
                         while (true)
                         {
                             if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
@@ -757,12 +757,16 @@ namespace MSRDPNatTraverseClient
                                 Debug.WriteLine("远程计算机的隧道已经成功建立，可以被远程访问。");
                                 return true;
                             }
-                            tryCount--;
-                            if (tryCount == 0)
+                            else
                             {
-                                return false;
+                                tryCount--;
+                                if (tryCount == 0)
+                                {
+                                    MessageBox.Show(string.Format("申请远程控制计算机(id: {0})失败，请确保对方网络正常！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    return false;
+                                }
+                                Thread.Sleep(1000);
                             }
-                            Thread.Sleep(1000);
                         }
                     }
                     else
