@@ -643,6 +643,9 @@ namespace MSRDPNatTraverseClient
             {
                 this.Invoke(new Action(() =>
                 {
+                    // 看看有没有被选中的项目，如果没有的话，那就什么都不用管；否则要对选中的项目作记录
+                    int id = (remoteComputerListBox.SelectedIndex != -1) ? onlineComputerList[remoteComputerListBox.SelectedIndex] : -1;
+
                     remoteComputerListBox.Items.Clear();
                     onlineComputerList.Clear();
                     for (int i = 0; i < dict.Count; i++)
@@ -650,6 +653,16 @@ namespace MSRDPNatTraverseClient
                         remoteComputerListBox.Items.Add(string.Format("{0}. {1}    {2}",
                             i + 1, dict.ElementAt(i).Key, dict.ElementAt(i).Value));
                         onlineComputerList.Add(dict.ElementAt(i).Key);
+                    }
+
+                    // 查看之前选中的项目，如果有，还要继续保持选中
+                    for (int i = 0; i < onlineComputerList.Count; i++)
+                    {
+                        if (onlineComputerList[i] == id)
+                        {
+                            remoteComputerListBox.SelectedIndex = i;
+                            return;
+                        }
                     }
                 })); 
             }
@@ -946,17 +959,15 @@ namespace MSRDPNatTraverseClient
 
                 if (localComputer.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 10))
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 4))
                     {
                         Debug.WriteLine("我还在线！");
-
-                        // 自动刷新在线列表
                         UpdateRemoteMachineList();
                     }
                 }
-                // 每隔5s更新一次
+                // 每25s更新一次
                 // 服务器会在30s收不到更新，自动判断为下线
-                Thread.Sleep(5 * 1000);
+                Thread.Sleep(2 * 1000);
             }
         }
 
@@ -1087,6 +1098,9 @@ namespace MSRDPNatTraverseClient
             proc.StartInfo.Arguments = string.Format("/v {0}:{1} /span", host, port);
             proc.StartInfo.CreateNoWindow = true;
 
+            bool oldState = closeWithoutQuitCheckBox.Checked;
+
+            closeWithoutQuitCheckBox.Checked = true;
             // 启动前隐藏主窗口，等待关闭后再弹出主窗口，防止误操作！
             ControlWindowVisibilityToolStripMenuItem_Click(null, null);
 
@@ -1096,6 +1110,7 @@ namespace MSRDPNatTraverseClient
             // 自动断开连接，不再需要手动断开连接
             controlButton_Click(controlButton, null);
             ControlWindowVisibilityToolStripMenuItem_Click(null, null);
+            closeWithoutQuitCheckBox.Checked = oldState;
         }
 
         #endregion
