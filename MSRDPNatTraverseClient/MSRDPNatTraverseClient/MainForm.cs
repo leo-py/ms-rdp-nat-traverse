@@ -946,11 +946,14 @@ namespace MSRDPNatTraverseClient
                     if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 5))
                     {
                         Debug.WriteLine("我还在线！");
+
+                        // 自动刷新在线列表
+                        UpdateRemoteMachineList();
                     }
                 }
-                // 每隔10s更新一次
+                // 每隔5s更新一次
                 // 服务器会在30s收不到更新，自动判断为下线
-                Thread.Sleep(10 * 1000);
+                Thread.Sleep(5 * 1000);
             }
         }
 
