@@ -571,6 +571,9 @@ namespace MSRDPNatTraverseClient
 
                     Debug.WriteLine("启动查询本机状态请求的线程");
                     queryStatusThread.Start();
+
+                    // 自动更新在线的计算机列表
+                    UpdateRemoteMachineList();
                 }
                 else
                 {
