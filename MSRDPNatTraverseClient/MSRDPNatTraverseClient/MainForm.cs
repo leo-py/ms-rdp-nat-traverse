@@ -1071,7 +1071,16 @@ namespace MSRDPNatTraverseClient
             proc.StartInfo.FileName = "mstsc";
             proc.StartInfo.Arguments = string.Format("/v {0}:{1} /span", host, port);
             proc.StartInfo.CreateNoWindow = true;
+
+            // 启动前隐藏主窗口，等待关闭后再弹出主窗口，防止误操作！
+            ControlWindowVisibilityToolStripMenuItem_Click(null, null);
+
             proc.Start();
+            proc.WaitForExit();
+
+            // 自动断开连接，不再需要手动断开连接
+            controlButton_Click(controlButton, null);
+            ControlWindowVisibilityToolStripMenuItem_Click(null, null);
         }
 
         #endregion
