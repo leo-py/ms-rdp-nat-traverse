@@ -946,7 +946,7 @@ namespace MSRDPNatTraverseClient
 
                 if (localComputer.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 5))
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 10))
                     {
                         Debug.WriteLine("我还在线！");
 
