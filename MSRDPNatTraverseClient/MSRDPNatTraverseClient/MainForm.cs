@@ -641,14 +641,17 @@ namespace MSRDPNatTraverseClient
 
             if (dict != null)
             {
-                remoteComputerListBox.Items.Clear();
-                onlineComputerList.Clear();
-                for (int i = 0; i < dict.Count; i++)
+                this.Invoke(new Action(() =>
                 {
-                    remoteComputerListBox.Items.Add(string.Format("{0}. {1}    {2}", 
-                        i + 1, dict.ElementAt(i).Key, dict.ElementAt(i).Value));
-                    onlineComputerList.Add(dict.ElementAt(i).Key);
-                }
+                    remoteComputerListBox.Items.Clear();
+                    onlineComputerList.Clear();
+                    for (int i = 0; i < dict.Count; i++)
+                    {
+                        remoteComputerListBox.Items.Add(string.Format("{0}. {1}    {2}",
+                            i + 1, dict.ElementAt(i).Key, dict.ElementAt(i).Value));
+                        onlineComputerList.Add(dict.ElementAt(i).Key);
+                    }
+                })); 
             }
         }
 
@@ -752,7 +755,7 @@ namespace MSRDPNatTraverseClient
                     {
                         Debug.WriteLine("设置目标计算机配对id成功");
                         // 等待对方响应请求
-                        int tryCount = 3;
+                        int tryCount = 20;
                         while (true)
                         {
                             if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
@@ -768,8 +771,8 @@ namespace MSRDPNatTraverseClient
                                     MessageBox.Show(string.Format("申请远程控制计算机(id: {0})失败，请确保对方网络正常！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     return false;
                                 }
-                                Thread.Sleep(1000);
                             }
+                            Thread.Sleep(1000);
                         }
                     }
                     else
