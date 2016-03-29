@@ -1,1 +1,1 @@
-{"log_name": "debug.log", "log_level": "DEBUG", "listen_port": 9000}
+{"log_level": "ERROR", "listen_port": 9001, "log_name": "debug.log"}
