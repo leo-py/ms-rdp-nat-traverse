@@ -66,9 +66,6 @@ namespace MSRDPNatTraverseClient
         public MainForm()
         {
             InitializeComponent();
-
-            // 显示这些信息
-            LoadConfig();
         }
 
         #region 菜单项及按钮等事件处理函数集合
@@ -336,6 +333,17 @@ namespace MSRDPNatTraverseClient
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Quit();
+        }
+
+        /// <summary>
+        /// 窗体显示的时候触发
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            // 加载配置
+            LoadConfig();
         }
 
         /// <summary>
@@ -959,15 +967,15 @@ namespace MSRDPNatTraverseClient
 
                 if (localComputer.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 4))
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 10))
                     {
                         Debug.WriteLine("我还在线！");
                         UpdateRemoteMachineList();
                     }
                 }
-                // 每25s更新一次
-                // 服务器会在30s收不到更新，自动判断为下线
-                Thread.Sleep(2 * 1000);
+                // 每4s更新一次
+                // 服务器会在10s收不到更新，自动判断为下线
+                Thread.Sleep(4 * 1000);
             }
         }
 
