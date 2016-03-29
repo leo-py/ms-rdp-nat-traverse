@@ -49,7 +49,11 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         CancellationTokenSource cts = null;
 
-        private Thread restartServiceThread = null;
+        /// <summary>
+        /// 定时器，用于检测要不要尝试重新连接代理服务器，重新启动服务
+        /// </summary>
+        private System.Windows.Forms.Timer autoRestartServiceTimer = new System.Windows.Forms.Timer();
+
         /// <summary>
         /// 在线计算机列表
         /// </summary>
@@ -360,6 +364,10 @@ namespace MSRDPNatTraverseClient
                 // 保存当前的配置信息
                 programConfig.Computer = localComputer;
                 FileOperation.SaveConfig(programConfig);
+
+                // 停止定时器
+                autoRestartServiceTimer.Enabled = false;
+                autoRestartServiceTimer.Dispose();
             }
             else
             {
@@ -375,6 +383,10 @@ namespace MSRDPNatTraverseClient
                     // 保存当前的配置信息
                     programConfig.Computer = localComputer;
                     FileOperation.SaveConfig(programConfig);
+
+                    // 停止定时器
+                    autoRestartServiceTimer.Enabled = false;
+                    autoRestartServiceTimer.Dispose();
                 }
             }
         }
@@ -577,11 +589,13 @@ namespace MSRDPNatTraverseClient
                     keepAliveThread = new Thread(KeepAliveThread);
                     queryStatusThread = new Thread(QueryStatusThread);
 
-                    if (restartServiceThread == null)
+                    // 检查计时器有没有启动
+                    if (autoRestartServiceTimer.Enabled == false)
                     {
-                        restartServiceThread = new Thread(AutoRestartServiThread);
-                        Debug.WriteLine("启动检查是否需要自动重启服务的线程");
-                        restartServiceThread.Start();
+                        autoRestartServiceTimer.Interval = 30 * 1000;
+                        autoRestartServiceTimer.Enabled = true;
+                        autoRestartServiceTimer.Start();
+                        autoRestartServiceTimer.Tick += AutoRestartServiceTimer_Tick;
                     }
 
                     cts = new CancellationTokenSource();
@@ -1008,6 +1022,23 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+        private bool tryRestart = false;
+        /// <summary>
+        /// 检查是否需要重启服务
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AutoRestartServiceTimer_Tick(object sender, EventArgs e)
+        {
+            if (tryRestart)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    Start(false);
+                }));
+            }
+        }
+
         /// <summary>
         /// 专门用来显示进度的线程
         /// </summary>
@@ -1019,25 +1050,6 @@ namespace MSRDPNatTraverseClient
             {
                 var form = new ProgressForm(dict["title"], dict["content"]);
                 form.ShowDialog();
-            }
-        }
-
-        private bool tryRestart = false;
-        /// <summary>
-        /// 自动服务的线程，只有当断开连接后，该线程才会尝试连接
-        /// </summary>
-        private void AutoRestartServiThread()
-        {
-            while (true)
-            {
-                Thread.Sleep(60 * 1000);
-                if (tryRestart)
-                {
-                    this.Invoke(new Action(() =>
-                    {
-                        Start(false);
-                    })); 
-                }
             }
         }
         #endregion
