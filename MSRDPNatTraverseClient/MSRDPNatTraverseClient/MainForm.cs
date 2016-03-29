@@ -49,6 +49,7 @@ namespace MSRDPNatTraverseClient
         /// </summary>
         CancellationTokenSource cts = null;
 
+        private Thread restartServiceThread = null;
         /// <summary>
         /// 在线计算机列表
         /// </summary>
@@ -539,8 +540,11 @@ namespace MSRDPNatTraverseClient
         /// <summary>
         /// 客户端启动相关服务
         /// </summary>
-        private async void Start()
+        private async void Start(bool enableInteractive = true)
         {
+            //
+            tryRestart = false;
+
             // 更新按钮的状态
             startButton.Enabled = false;
             stopButton.Enabled = true;
@@ -550,6 +554,8 @@ namespace MSRDPNatTraverseClient
             // 更新菜单的状态
             StartToolStripMenuItem.Enabled = false;
             StopToolStripMenuItem.Enabled = true;
+
+            ShowStatusStrip("正在启动服务，请稍等...");
 
             // 根据协议要求，首先获取一个id，标记在线注册
             localComputer.ID = await Client.GetComputerIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort);
@@ -570,6 +576,13 @@ namespace MSRDPNatTraverseClient
                     // 创建两个线程分别负责检查在线状态和检查请求状态信息
                     keepAliveThread = new Thread(KeepAliveThread);
                     queryStatusThread = new Thread(QueryStatusThread);
+
+                    if (restartServiceThread == null)
+                    {
+                        restartServiceThread = new Thread(AutoRestartServiThread);
+                        Debug.WriteLine("启动检查是否需要自动重启服务的线程");
+                        restartServiceThread.Start();
+                    }
 
                     cts = new CancellationTokenSource();
 
@@ -597,10 +610,16 @@ namespace MSRDPNatTraverseClient
             else
             {
                 Debug.WriteLine("获取id失败");
-                MessageBox.Show(string.Format("启动服务失败，请确保网络状态正常，代理服务器: {0} 工作正常后再次尝试！", proxyServer.Name), "警告消息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // 如果是监视线程尝试自动启动服务，就不需要对话框提示
+                if (enableInteractive)
+                {
+                    MessageBox.Show(string.Format("启动服务失败，请确保网络状态正常，并且代理服务器: {0} 工作正常后再次尝试！", proxyServer.Name), "警告消息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
                 SetServerConnectionStatus(false);
                 Stop();
+                tryRestart = true;
             }
+            HideStatusStrip();
         }
 
         /// <summary>
@@ -967,7 +986,7 @@ namespace MSRDPNatTraverseClient
 
                 if (localComputer.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 5))
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 6))
                     {
                         UpdateRemoteMachineList();
                     }
@@ -977,12 +996,14 @@ namespace MSRDPNatTraverseClient
                         this.Invoke(new Action(() =>
                         {
                             SetServerConnectionStatus(false);
+                            ShowStatusStrip("与代理服务器的连接已经断开，程序将会在一段时间后尝试重新启动服务...");
                             Stop();
+                            tryRestart = true;
                         }));
                     }
                 }
                 // 每1s更新一次
-                // 服务器会在5s后收不到新值，自动判断为下线
+                // 服务器会在6s后收不到新值，自动判断为下线
                 Thread.Sleep(1 * 1000);
             }
         }
@@ -998,6 +1019,25 @@ namespace MSRDPNatTraverseClient
             {
                 var form = new ProgressForm(dict["title"], dict["content"]);
                 form.ShowDialog();
+            }
+        }
+
+        private bool tryRestart = false;
+        /// <summary>
+        /// 自动服务的线程，只有当断开连接后，该线程才会尝试连接
+        /// </summary>
+        private void AutoRestartServiThread()
+        {
+            while (true)
+            {
+                Thread.Sleep(60 * 1000);
+                if (tryRestart)
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        Start(false);
+                    })); 
+                }
             }
         }
         #endregion
