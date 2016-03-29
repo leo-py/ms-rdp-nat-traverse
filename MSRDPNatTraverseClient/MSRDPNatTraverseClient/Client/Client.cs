@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace MSRDPNatTraverseClient.Computer
+namespace MSRDPNatTraverseClient.Client
 {
-    public class Computer
+    public class Client
     {
         #region 私有变量
         private string name = "TestPC";
@@ -80,8 +80,8 @@ namespace MSRDPNatTraverseClient.Computer
         #endregion
 
         #region 函数
-        public Computer() { }
-        public Computer(string name, int id, int rdpPort, string descrition)
+        public Client() { }
+        public Client(string name, int id, int rdpPort, string descrition)
         {
             Name = name;
             ID = id;
