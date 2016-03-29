@@ -21,11 +21,51 @@ namespace MSRDPNatTraverseClient.Config
         #region 私有变量
         private bool autoStartUp = false;
         private bool enableBackgroundMode = false;
-        LocalMachine.LocalMachine localMachine = null;
+        Client.Client client = null;
         private int selectedServerIndex = -1;
+        private int proxyServerListenPort = 9000;
+        private int queryStatusInterval = 4;
+        private int keepAliveInterval = 10;
+        private bool acceptControlRequest = false;
         #endregion
 
         #region 属性
+        public bool AcceptControlRequest
+        {
+            get
+            {
+                return acceptControlRequest;
+            }
+            set
+            {
+                acceptControlRequest = value;
+            }
+        }
+
+        public int QueryStatusInterval
+        {
+            get
+            {
+                return queryStatusInterval;
+            }
+            set
+            {
+                queryStatusInterval = value;
+            }
+        }
+
+        public int KeepAliveInterval
+        {
+            get
+            {
+                return keepAliveInterval;
+            }
+            set
+            {
+                keepAliveInterval = value;
+            }
+        }
+
         public bool AutoStartup
         {
             get
@@ -50,15 +90,15 @@ namespace MSRDPNatTraverseClient.Config
             }
         }
 
-        public LocalMachine.LocalMachine Machine
+        public Client.Client Client
         {
             get
             {
-                return localMachine;
+                return client;
             }
             set
             {
-                localMachine = value;
+                client = value;
             }
         }
 
@@ -73,19 +113,33 @@ namespace MSRDPNatTraverseClient.Config
                 selectedServerIndex = value;
             }
         }
+
+        public int ProxyServerListenPort
+        {
+            get
+            {
+                return proxyServerListenPort;
+            }
+            set
+            {
+                proxyServerListenPort = value;
+            }
+        }
         #endregion
 
         #region 构造函数
         public Config() { }
         public Config(bool autoStartup, 
             bool enableBackgroundMode, 
-            LocalMachine.LocalMachine machine, 
-            int selectedServerIndex)
+            Client.Client client, 
+            int selectedServerIndex,
+            int proxyServerListenPort)
         {
             AutoStartup = autoStartup;
             EnableBackgroundMode = enableBackgroundMode;
-            Machine = machine;
+            Client = client;
             SelectedServerIndex = selectedServerIndex;
+            ProxyServerListenPort = proxyServerListenPort;
         }
         #endregion
     }

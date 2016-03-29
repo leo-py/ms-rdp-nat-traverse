@@ -24,7 +24,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         private readonly string PLINK_PROGRAM_PATH = @"util\plink.exe";
 
         private ProxyServer.ProxyServer _server = null;
-        private LocalMachine.LocalMachine _machine = null;
+        private Client.Client _machine = null;
 
         // 
         private int _tunnelPort = 10000;
@@ -46,7 +46,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         #endregion
 
         #region 公开的函数接口
-        public SSHReverseTunnel(LocalMachine.LocalMachine machine, ProxyServer.ProxyServer server, int tunnelPort)
+        public SSHReverseTunnel(Client.Client machine, ProxyServer.ProxyServer server, int tunnelPort)
         {
             _server = server;
             _machine = machine;
@@ -88,6 +88,7 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
                 return false;
             }
         }
+
         #endregion
 
         #region 私有的函数接口
@@ -95,45 +96,69 @@ namespace MSRDPNatTraverseClient.SSHReverseTunnel
         {
             if (ValidatePlinkPath())
             {
-                // 命令执行部分
-                var cmdProcess = new System.Diagnostics.Process();
+                Process plinkProcess = new Process();
 
                 // 相关设置
-                cmdProcess.StartInfo.FileName = "cmd.exe";
-                cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
-                cmdProcess.StartInfo.RedirectStandardError = true;  // 重定向标准错误
-                cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
-                cmdProcess.StartInfo.RedirectStandardOutput = true; // 获取输出信息
-                cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
+                plinkProcess.StartInfo.FileName = PLINK_PROGRAM_PATH;
+                plinkProcess.StartInfo.Arguments = string.Format("-pw {0} -P {1} -N -R {2}:{3}:{4}:{5} {6}@{7}",
+                    _server.LoginPassword, _server.LoginPort, "0.0.0.0", _tunnelPort, "127.0.0.1", _machine.RDPPort, _server.LoginName, _server.Hostname);
+                plinkProcess.StartInfo.UseShellExecute = false;
+                plinkProcess.StartInfo.RedirectStandardInput = true;
+                plinkProcess.StartInfo.CreateNoWindow = true;
 
-                // 启动程序
-                cmdProcess.Start();
-
-                // 发送要执行的命令
-                string cmdStr = string.Format(@"{0} -pw {1} -P {2} -N -R {3}:{4}:{5}:{6} {7}@{8} &exit",
-                    PLINK_PROGRAM_PATH,
-                    _server.LoginPassword,
-                    _server.LoginPort,
-                    _server.IPAdress,
-                    _tunnelPort,
-                    "127.0.0.1",
-                    _machine.RDPPort,
-                    _server.LoginName,
-                    _server.IPAdress);
-
-                cmdProcess.StandardInput.WriteLine(cmdStr);
-
-                // 延时等待进程启动
-                System.Threading.Thread.Sleep(100);
-
-                // 返回启动后的plink进程
-                return GetLastStartedProcessByName("plink");
+                if (plinkProcess.Start())
+                {
+                    plinkProcess.StandardInput.WriteLine("y\n");
+                    return plinkProcess;
+                }
             }
-            else
-            {
-                throw new Exception("找不到路径：" + PLINK_PROGRAM_PATH);
-            }
+            return null;
         }
+
+        //private Process StartPlinkProcess()
+        //{
+        //    if (ValidatePlinkPath())
+        //    {
+        //        // 命令执行部分
+        //        var cmdProcess = new System.Diagnostics.Process();
+
+        //        // 相关设置
+        //        cmdProcess.StartInfo.FileName = PLINK_PROGRAM_PATH;
+        //        cmdProcess.StartInfo.UseShellExecute = false;       // 是否使用操作系统Shell启动
+        //        cmdProcess.StartInfo.RedirectStandardError = false;  // 重定向标准错误
+        //        cmdProcess.StartInfo.RedirectStandardInput = true;  // 接收来自调用程序的输入信息
+        //        cmdProcess.StartInfo.RedirectStandardOutput = false; // 获取输出信息
+        //        cmdProcess.StartInfo.CreateNoWindow = true;         // 不需要窗口显示
+
+        //        // 启动程序
+        //        cmdProcess.Start();
+
+        //        // 发送要执行的命令
+        //        string cmdStr = string.Format(@"{0} -pw {1} -P {2} -N -R {3}:{4}:{5}:{6} {7}@{8} &exit",
+        //            PLINK_PROGRAM_PATH,
+        //            _server.LoginPassword,
+        //            _server.LoginPort,
+        //            "0.0.0.0",
+        //            _tunnelPort,
+        //            "127.0.0.1",
+        //            _machine.RDPPort,
+        //            _server.LoginName,
+        //            _server.Hostname);
+
+        //        cmdProcess.StandardInput.WriteLine(cmdStr);
+        //        // 延时等待进程启动
+        //        System.Threading.Thread.Sleep(100);
+
+        //        cmdProcess.StandardInput.WriteLine("y");
+
+        //        // 返回启动后的plink进程
+        //        return GetLastStartedProcessByName("plink");
+        //    }
+        //    else
+        //    {
+        //        throw new Exception("找不到路径：" + PLINK_PROGRAM_PATH);
+        //    }
+        //}
 
         private Process GetLastStartedProcessByName(string name)
         {

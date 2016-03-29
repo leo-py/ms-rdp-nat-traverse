@@ -5,15 +5,16 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace MSRDPNatTraverseClient.LocalMachine
+namespace MSRDPNatTraverseClient.Client
 {
-    public class LocalMachine
+    public class Client
     {
         #region 私有变量
         private string name = "TestPC";
         private int id = 1000;
         private int rdpPort = 3389;
         private string description = "示例：这是一台测试PC。";
+        private int peeredId = -1;
         #endregion
 
         #region 属性
@@ -64,11 +65,23 @@ namespace MSRDPNatTraverseClient.LocalMachine
                 description = value;
             }
         }
+
+        public int PeeredId
+        {
+            get
+            {
+                return peeredId;
+            }
+            set
+            {
+                peeredId = value;
+            }
+        }
         #endregion
 
         #region 函数
-        public LocalMachine() { }
-        public LocalMachine(string name, int id, int rdpPort, string descrition)
+        public Client() { }
+        public Client(string name, int id, int rdpPort, string descrition)
         {
             Name = name;
             ID = id;

@@ -28,11 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.服务器ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.EditServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ChangeServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.EditLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SaveLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AboutProgramToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.machineNameTextBox = new System.Windows.Forms.TextBox();
@@ -51,20 +54,29 @@
             this.label8 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.acceptControlRequestCheckBox = new System.Windows.Forms.CheckBox();
             this.quitButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
             this.startButton = new System.Windows.Forms.Button();
             this.closeWithoutQuitCheckBox = new System.Windows.Forms.CheckBox();
-            this.autoStartupCheckBox = new System.Windows.Forms.CheckBox();
+            this.autoStartCheckBox = new System.Windows.Forms.CheckBox();
             this.tabControl = new System.Windows.Forms.TabControl();
             this.tabPageLocal = new System.Windows.Forms.TabPage();
             this.tabPageRemote = new System.Windows.Forms.TabPage();
-            this.EditLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.SaveLocalMachineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.groupBoxOnlineMachine = new System.Windows.Forms.GroupBox();
-            this.listBox1 = new System.Windows.Forms.ListBox();
-            this.upddateRemteMachineListButton = new System.Windows.Forms.Button();
             this.controlButton = new System.Windows.Forms.Button();
+            this.updateOnlineListButton = new System.Windows.Forms.Button();
+            this.groupBoxOnlineMachine = new System.Windows.Forms.GroupBox();
+            this.remoteClientListBox = new System.Windows.Forms.ListBox();
+            this.statusStrip = new System.Windows.Forms.StatusStrip();
+            this.toolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripProgressBar = new System.Windows.Forms.ToolStripProgressBar();
+            this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
+            this.notifyIconContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.ControlWindowVisibilityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.StartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.StopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ExitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -72,6 +84,8 @@
             this.tabPageLocal.SuspendLayout();
             this.tabPageRemote.SuspendLayout();
             this.groupBoxOnlineMachine.SuspendLayout();
+            this.statusStrip.SuspendLayout();
+            this.notifyIconContextMenuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -103,6 +117,18 @@
             this.ChangeServerToolStripMenuItem.Name = "ChangeServerToolStripMenuItem";
             resources.ApplyResources(this.ChangeServerToolStripMenuItem, "ChangeServerToolStripMenuItem");
             this.ChangeServerToolStripMenuItem.Click += new System.EventHandler(this.ChangeServerToolStripMenuItem_Click);
+            // 
+            // EditLocalMachineToolStripMenuItem
+            // 
+            this.EditLocalMachineToolStripMenuItem.Name = "EditLocalMachineToolStripMenuItem";
+            resources.ApplyResources(this.EditLocalMachineToolStripMenuItem, "EditLocalMachineToolStripMenuItem");
+            this.EditLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.EditLocalMachineToolStripMenuItem_Click_1);
+            // 
+            // SaveLocalMachineToolStripMenuItem
+            // 
+            this.SaveLocalMachineToolStripMenuItem.Name = "SaveLocalMachineToolStripMenuItem";
+            resources.ApplyResources(this.SaveLocalMachineToolStripMenuItem, "SaveLocalMachineToolStripMenuItem");
+            this.SaveLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.SaveLocalMachineToolStripMenuItem_Click);
             // 
             // 帮助ToolStripMenuItem
             // 
@@ -233,14 +259,22 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.acceptControlRequestCheckBox);
             this.groupBox3.Controls.Add(this.quitButton);
             this.groupBox3.Controls.Add(this.stopButton);
             this.groupBox3.Controls.Add(this.startButton);
             this.groupBox3.Controls.Add(this.closeWithoutQuitCheckBox);
-            this.groupBox3.Controls.Add(this.autoStartupCheckBox);
+            this.groupBox3.Controls.Add(this.autoStartCheckBox);
             resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.TabStop = false;
+            // 
+            // acceptControlRequestCheckBox
+            // 
+            resources.ApplyResources(this.acceptControlRequestCheckBox, "acceptControlRequestCheckBox");
+            this.acceptControlRequestCheckBox.Name = "acceptControlRequestCheckBox";
+            this.acceptControlRequestCheckBox.UseVisualStyleBackColor = true;
+            this.acceptControlRequestCheckBox.CheckedChanged += new System.EventHandler(this.acceptControlRequestCheckBox_CheckedChanged);
             // 
             // quitButton
             // 
@@ -270,12 +304,12 @@
             this.closeWithoutQuitCheckBox.UseVisualStyleBackColor = true;
             this.closeWithoutQuitCheckBox.CheckedChanged += new System.EventHandler(this.closeWithoutQuitCheckBox_CheckedChanged);
             // 
-            // autoStartupCheckBox
+            // autoStartCheckBox
             // 
-            resources.ApplyResources(this.autoStartupCheckBox, "autoStartupCheckBox");
-            this.autoStartupCheckBox.Name = "autoStartupCheckBox";
-            this.autoStartupCheckBox.UseVisualStyleBackColor = true;
-            this.autoStartupCheckBox.CheckedChanged += new System.EventHandler(this.autoStartupCheckBox_CheckedChanged);
+            resources.ApplyResources(this.autoStartCheckBox, "autoStartCheckBox");
+            this.autoStartCheckBox.Name = "autoStartCheckBox";
+            this.autoStartCheckBox.UseVisualStyleBackColor = true;
+            this.autoStartCheckBox.CheckedChanged += new System.EventHandler(this.autoStartupCheckBox_CheckedChanged);
             // 
             // tabControl
             // 
@@ -302,47 +336,11 @@
             // tabPageRemote
             // 
             this.tabPageRemote.Controls.Add(this.controlButton);
-            this.tabPageRemote.Controls.Add(this.upddateRemteMachineListButton);
+            this.tabPageRemote.Controls.Add(this.updateOnlineListButton);
             this.tabPageRemote.Controls.Add(this.groupBoxOnlineMachine);
             resources.ApplyResources(this.tabPageRemote, "tabPageRemote");
             this.tabPageRemote.Name = "tabPageRemote";
             this.tabPageRemote.UseVisualStyleBackColor = true;
-            // 
-            // EditLocalMachineToolStripMenuItem
-            // 
-            this.EditLocalMachineToolStripMenuItem.Name = "EditLocalMachineToolStripMenuItem";
-            resources.ApplyResources(this.EditLocalMachineToolStripMenuItem, "EditLocalMachineToolStripMenuItem");
-            this.EditLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.EditLocalMachineToolStripMenuItem_Click_1);
-            // 
-            // SaveLocalMachineToolStripMenuItem
-            // 
-            this.SaveLocalMachineToolStripMenuItem.Name = "SaveLocalMachineToolStripMenuItem";
-            resources.ApplyResources(this.SaveLocalMachineToolStripMenuItem, "SaveLocalMachineToolStripMenuItem");
-            this.SaveLocalMachineToolStripMenuItem.Click += new System.EventHandler(this.SaveLocalMachineToolStripMenuItem_Click);
-            // 
-            // groupBoxOnlineMachine
-            // 
-            this.groupBoxOnlineMachine.Controls.Add(this.listBox1);
-            resources.ApplyResources(this.groupBoxOnlineMachine, "groupBoxOnlineMachine");
-            this.groupBoxOnlineMachine.Name = "groupBoxOnlineMachine";
-            this.groupBoxOnlineMachine.TabStop = false;
-            // 
-            // listBox1
-            // 
-            this.listBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.listBox1.FormattingEnabled = true;
-            resources.ApplyResources(this.listBox1, "listBox1");
-            this.listBox1.Items.AddRange(new object[] {
-            resources.GetString("listBox1.Items"),
-            resources.GetString("listBox1.Items1")});
-            this.listBox1.Name = "listBox1";
-            // 
-            // upddateRemteMachineListButton
-            // 
-            resources.ApplyResources(this.upddateRemteMachineListButton, "upddateRemteMachineListButton");
-            this.upddateRemteMachineListButton.Name = "upddateRemteMachineListButton";
-            this.upddateRemteMachineListButton.UseVisualStyleBackColor = true;
-            this.upddateRemteMachineListButton.Click += new System.EventHandler(this.upddateRemteMachineListButton_Click);
             // 
             // controlButton
             // 
@@ -351,10 +349,98 @@
             this.controlButton.UseVisualStyleBackColor = true;
             this.controlButton.Click += new System.EventHandler(this.controlButton_Click);
             // 
+            // updateOnlineListButton
+            // 
+            resources.ApplyResources(this.updateOnlineListButton, "updateOnlineListButton");
+            this.updateOnlineListButton.Name = "updateOnlineListButton";
+            this.updateOnlineListButton.UseVisualStyleBackColor = true;
+            this.updateOnlineListButton.Click += new System.EventHandler(this.upddateRemteMachineListButton_Click);
+            // 
+            // groupBoxOnlineMachine
+            // 
+            this.groupBoxOnlineMachine.Controls.Add(this.remoteClientListBox);
+            resources.ApplyResources(this.groupBoxOnlineMachine, "groupBoxOnlineMachine");
+            this.groupBoxOnlineMachine.Name = "groupBoxOnlineMachine";
+            this.groupBoxOnlineMachine.TabStop = false;
+            // 
+            // remoteClientListBox
+            // 
+            this.remoteClientListBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.remoteClientListBox.FormattingEnabled = true;
+            resources.ApplyResources(this.remoteClientListBox, "remoteClientListBox");
+            this.remoteClientListBox.Name = "remoteClientListBox";
+            // 
+            // statusStrip
+            // 
+            this.statusStrip.BackColor = System.Drawing.SystemColors.Control;
+            this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusLabelSpace,
+            this.toolStripStatusLabel,
+            this.toolStripProgressBar});
+            resources.ApplyResources(this.statusStrip, "statusStrip");
+            this.statusStrip.Name = "statusStrip";
+            // 
+            // toolStripStatusLabelSpace
+            // 
+            this.toolStripStatusLabelSpace.Name = "toolStripStatusLabelSpace";
+            resources.ApplyResources(this.toolStripStatusLabelSpace, "toolStripStatusLabelSpace");
+            // 
+            // toolStripStatusLabel
+            // 
+            this.toolStripStatusLabel.ForeColor = System.Drawing.Color.Blue;
+            this.toolStripStatusLabel.Name = "toolStripStatusLabel";
+            resources.ApplyResources(this.toolStripStatusLabel, "toolStripStatusLabel");
+            // 
+            // toolStripProgressBar
+            // 
+            this.toolStripProgressBar.Name = "toolStripProgressBar";
+            resources.ApplyResources(this.toolStripProgressBar, "toolStripProgressBar");
+            // 
+            // notifyIcon
+            // 
+            this.notifyIcon.ContextMenuStrip = this.notifyIconContextMenuStrip;
+            resources.ApplyResources(this.notifyIcon, "notifyIcon");
+            this.notifyIcon.MouseClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseClick);
+            // 
+            // notifyIconContextMenuStrip
+            // 
+            this.notifyIconContextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ControlWindowVisibilityToolStripMenuItem,
+            this.StartToolStripMenuItem,
+            this.StopToolStripMenuItem,
+            this.ExitToolStripMenuItem});
+            this.notifyIconContextMenuStrip.Name = "notifyIconContextMenuStrip";
+            resources.ApplyResources(this.notifyIconContextMenuStrip, "notifyIconContextMenuStrip");
+            // 
+            // ControlWindowVisibilityToolStripMenuItem
+            // 
+            this.ControlWindowVisibilityToolStripMenuItem.Name = "ControlWindowVisibilityToolStripMenuItem";
+            resources.ApplyResources(this.ControlWindowVisibilityToolStripMenuItem, "ControlWindowVisibilityToolStripMenuItem");
+            this.ControlWindowVisibilityToolStripMenuItem.Click += new System.EventHandler(this.ControlWindowVisibilityToolStripMenuItem_Click);
+            // 
+            // StartToolStripMenuItem
+            // 
+            this.StartToolStripMenuItem.Name = "StartToolStripMenuItem";
+            resources.ApplyResources(this.StartToolStripMenuItem, "StartToolStripMenuItem");
+            this.StartToolStripMenuItem.Click += new System.EventHandler(this.StartToolStripMenuItem_Click);
+            // 
+            // StopToolStripMenuItem
+            // 
+            resources.ApplyResources(this.StopToolStripMenuItem, "StopToolStripMenuItem");
+            this.StopToolStripMenuItem.Name = "StopToolStripMenuItem";
+            this.StopToolStripMenuItem.Click += new System.EventHandler(this.StopToolStripMenuItem_Click);
+            // 
+            // ExitToolStripMenuItem
+            // 
+            this.ExitToolStripMenuItem.Name = "ExitToolStripMenuItem";
+            resources.ApplyResources(this.ExitToolStripMenuItem, "ExitToolStripMenuItem");
+            this.ExitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
+            // 
             // MainForm
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -367,6 +453,7 @@
             this.Name = "MainForm";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
@@ -378,6 +465,9 @@
             this.tabPageLocal.PerformLayout();
             this.tabPageRemote.ResumeLayout(false);
             this.groupBoxOnlineMachine.ResumeLayout(false);
+            this.statusStrip.ResumeLayout(false);
+            this.statusStrip.PerformLayout();
+            this.notifyIconContextMenuStrip.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -402,7 +492,7 @@
         private System.Windows.Forms.TextBox machineIDTextBox;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.CheckBox closeWithoutQuitCheckBox;
-        private System.Windows.Forms.CheckBox autoStartupCheckBox;
+        private System.Windows.Forms.CheckBox autoStartCheckBox;
         private System.Windows.Forms.Button quitButton;
         private System.Windows.Forms.Button stopButton;
         private System.Windows.Forms.Button startButton;
@@ -418,9 +508,20 @@
         private System.Windows.Forms.ToolStripMenuItem EditLocalMachineToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem SaveLocalMachineToolStripMenuItem;
         private System.Windows.Forms.GroupBox groupBoxOnlineMachine;
-        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.ListBox remoteClientListBox;
         private System.Windows.Forms.Button controlButton;
-        private System.Windows.Forms.Button upddateRemteMachineListButton;
+        private System.Windows.Forms.Button updateOnlineListButton;
+        private System.Windows.Forms.StatusStrip statusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelSpace;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
+        private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
+        private System.Windows.Forms.NotifyIcon notifyIcon;
+        private System.Windows.Forms.ContextMenuStrip notifyIconContextMenuStrip;
+        private System.Windows.Forms.ToolStripMenuItem ControlWindowVisibilityToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem StartToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem StopToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ExitToolStripMenuItem;
+        private System.Windows.Forms.CheckBox acceptControlRequestCheckBox;
     }
 }
 
