@@ -13,7 +13,7 @@ namespace MSRDPNatTraverseClient.MainFom
     /// <summary>
     /// 协议有关的函数放置在该文件下
     /// </summary>
-    public class Client
+    public class Protocol
     {
         /// <summary>
         /// 用于构建请求消息的类
@@ -32,7 +32,7 @@ namespace MSRDPNatTraverseClient.MainFom
         /// <param name="host"></param>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static async Task<int> GetComputerIdAsync(string host, int port)
+        public static async Task<int> GetClientIdAsync(string host, int port)
         {
             // 构建要发送的消息
             var content = BuildRequestContent("get", "id", -1, null);
@@ -50,16 +50,16 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 上传计算机信息
+        /// 上传客户端信息
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computer"></param>
+        /// <param name="client"></param>
         /// <returns></returns>
-        public static async Task<bool> PostComputerInformationAsync(string host, int port, Computer.Computer computer)
+        public static async Task<bool> PostClientInformationAsync(string host, int port, Client.Client client)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("post", "computer_info", computer.ID, computer).ToLower();
+            var content = BuildRequestContent("post", "client_info", client.ID, client).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -78,12 +78,12 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<bool> GetControlRequestAsync(string host, int port, int computerId)
+        public static async Task<bool> GetControlRequestAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "control_request", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "control_request", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -98,17 +98,17 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 设置指定id计算机的远程控制请求
+        /// 设置指定id客户端的远程控制请求
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static async Task<bool> PostControlRequestAsync(string host, int port, int computerId, bool value)
+        public static async Task<bool> PostControlRequestAsync(string host, int port, int clientId, bool value)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("post", "control_request", computerId, value).ToLower();
+            var content = BuildRequestContent("post", "control_request", clientId, value).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -127,12 +127,12 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<int> GetTunnelPortAsync(string host, int port, int computerId, bool generateNewId)
+        public static async Task<int> GetTunnelPortAsync(string host, int port, int clientId, bool generateNewId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "tunnel_port", computerId, generateNewId).ToLower();
+            var content = BuildRequestContent("get", "tunnel_port", clientId, generateNewId).ToLower();
 
             var result = await SendProtocalRequestAsync<int>(host, port, content);
 
@@ -151,13 +151,13 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static async Task<bool> PostTunnelPortAsync(string host, int port, int computerId, int value)
+        public static async Task<bool> PostTunnelPortAsync(string host, int port, int clientId, int value)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("post", "tunnel_port", computerId, value).ToLower();
+            var content = BuildRequestContent("post", "tunnel_port", clientId, value).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -176,12 +176,12 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<bool> GetTunnelStatusAsync(string host, int port, int computerId)
+        public static async Task<bool> GetTunnelStatusAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "tunnel_status", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "tunnel_status", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -200,12 +200,12 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<bool> GetIsUnderControlAsync(string host, int port, int computerId)
+        public static async Task<bool> GetIsUnderControlAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "is_under_control", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "is_under_control", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -220,17 +220,17 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 设置制定id计算机的被控制状态
+        /// 设置制定id客户端的被控制状态
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static async Task<bool> PostIsUnderControlAsync(string host, int port, int computerId, bool value)
+        public static async Task<bool> PostIsUnderControlAsync(string host, int port, int clientId, bool value)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("post", "is_under_control", computerId, value).ToLower();
+            var content = BuildRequestContent("post", "is_under_control", clientId, value).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -245,16 +245,16 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 获取与此计算机远程连接的id
+        /// 获取与此客户端远程连接的id
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<int> GetPeeredRemoteIdAsync(string host, int port, int computerId)
+        public static async Task<int> GetPeeredRemoteIdAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "peered_remote_id", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "peered_remote_id", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<int>(host, port, content);
 
@@ -269,17 +269,17 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 设置指定id的配对计算机的id
+        /// 设置指定id的配对客户端的id
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static async Task<bool> PostPeeredRemoteIdAsync(string host, int port, int computerId, int value)
+        public static async Task<bool> PostPeeredRemoteIdAsync(string host, int port, int clientId, int value)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("post", "peered_remote_id", computerId, value).ToLower();
+            var content = BuildRequestContent("post", "peered_remote_id", clientId, value).ToLower();
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
             if (result != null)
             {
@@ -296,12 +296,12 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<int> GetKeepAliveCountAsync(string host, int port, int computerId)
+        public static async Task<int> GetKeepAliveCountAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "keep_alive_count", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "keep_alive_count", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<int>(host, port, content);
 
@@ -320,13 +320,13 @@ namespace MSRDPNatTraverseClient.MainFom
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static async Task<bool> PostKeepAliveCountAsync(string host, int port, int computerId, int value)
+        public static async Task<bool> PostKeepAliveCountAsync(string host, int port, int clientId, int value)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("post", "keep_alive_count", computerId, value).ToLower();
+            var content = BuildRequestContent("post", "keep_alive_count", clientId, value).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -341,16 +341,16 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 获取指定id的计算机是否在线
+        /// 获取指定id的客户端是否在线
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        /// <param name="computerId"></param>
+        /// <param name="clientId"></param>
         /// <returns></returns>
-        public static async Task<bool> GetIsOnlineAsync(string host, int port, int computerId)
+        public static async Task<bool> GetIsOnlineAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "is_online", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "is_online", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<bool>(host, port, content);
 
@@ -365,15 +365,15 @@ namespace MSRDPNatTraverseClient.MainFom
         }
 
         /// <summary>
-        /// 获取在线的计算机的列表
+        /// 获取在线的客户端的列表
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static async Task<Dictionary<int, string>> GetOnlineComputerListAsync(string host, int port, int computerId)
+        public static async Task<Dictionary<int, string>> GetOnlineClientListAsync(string host, int port, int clientId)
         {
             // 构建要发送的消息
-            var content = BuildRequestContent("get", "online_list", computerId, null).ToLower();
+            var content = BuildRequestContent("get", "online_list", clientId, null).ToLower();
 
             var result = await SendProtocalRequestAsync<Dictionary<int, string>>(host, port, content);
 

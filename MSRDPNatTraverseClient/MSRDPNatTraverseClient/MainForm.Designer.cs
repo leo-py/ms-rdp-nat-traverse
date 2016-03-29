@@ -54,6 +54,7 @@
             this.label8 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.acceptControlRequestCheckBox = new System.Windows.Forms.CheckBox();
             this.quitButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
             this.startButton = new System.Windows.Forms.Button();
@@ -65,7 +66,7 @@
             this.controlButton = new System.Windows.Forms.Button();
             this.updateOnlineListButton = new System.Windows.Forms.Button();
             this.groupBoxOnlineMachine = new System.Windows.Forms.GroupBox();
-            this.remoteComputerListBox = new System.Windows.Forms.ListBox();
+            this.remoteClientListBox = new System.Windows.Forms.ListBox();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
@@ -76,7 +77,6 @@
             this.StartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.StopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ExitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.acceptControlRequestCheckBox = new System.Windows.Forms.CheckBox();
             this.menuStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -269,6 +269,13 @@
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.TabStop = false;
             // 
+            // acceptControlRequestCheckBox
+            // 
+            resources.ApplyResources(this.acceptControlRequestCheckBox, "acceptControlRequestCheckBox");
+            this.acceptControlRequestCheckBox.Name = "acceptControlRequestCheckBox";
+            this.acceptControlRequestCheckBox.UseVisualStyleBackColor = true;
+            this.acceptControlRequestCheckBox.CheckedChanged += new System.EventHandler(this.acceptControlRequestCheckBox_CheckedChanged);
+            // 
             // quitButton
             // 
             resources.ApplyResources(this.quitButton, "quitButton");
@@ -351,17 +358,17 @@
             // 
             // groupBoxOnlineMachine
             // 
-            this.groupBoxOnlineMachine.Controls.Add(this.remoteComputerListBox);
+            this.groupBoxOnlineMachine.Controls.Add(this.remoteClientListBox);
             resources.ApplyResources(this.groupBoxOnlineMachine, "groupBoxOnlineMachine");
             this.groupBoxOnlineMachine.Name = "groupBoxOnlineMachine";
             this.groupBoxOnlineMachine.TabStop = false;
             // 
-            // remoteComputerListBox
+            // remoteClientListBox
             // 
-            this.remoteComputerListBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.remoteComputerListBox.FormattingEnabled = true;
-            resources.ApplyResources(this.remoteComputerListBox, "remoteComputerListBox");
-            this.remoteComputerListBox.Name = "remoteComputerListBox";
+            this.remoteClientListBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.remoteClientListBox.FormattingEnabled = true;
+            resources.ApplyResources(this.remoteClientListBox, "remoteClientListBox");
+            this.remoteClientListBox.Name = "remoteClientListBox";
             // 
             // statusStrip
             // 
@@ -428,13 +435,6 @@
             this.ExitToolStripMenuItem.Name = "ExitToolStripMenuItem";
             resources.ApplyResources(this.ExitToolStripMenuItem, "ExitToolStripMenuItem");
             this.ExitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
-            // 
-            // acceptControlRequestCheckBox
-            // 
-            resources.ApplyResources(this.acceptControlRequestCheckBox, "acceptControlRequestCheckBox");
-            this.acceptControlRequestCheckBox.Name = "acceptControlRequestCheckBox";
-            this.acceptControlRequestCheckBox.UseVisualStyleBackColor = true;
-            this.acceptControlRequestCheckBox.CheckedChanged += new System.EventHandler(this.acceptControlRequestCheckBox_CheckedChanged);
             // 
             // MainForm
             // 
@@ -508,7 +508,7 @@
         private System.Windows.Forms.ToolStripMenuItem EditLocalMachineToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem SaveLocalMachineToolStripMenuItem;
         private System.Windows.Forms.GroupBox groupBoxOnlineMachine;
-        private System.Windows.Forms.ListBox remoteComputerListBox;
+        private System.Windows.Forms.ListBox remoteClientListBox;
         private System.Windows.Forms.Button controlButton;
         private System.Windows.Forms.Button updateOnlineListButton;
         private System.Windows.Forms.StatusStrip statusStrip;
