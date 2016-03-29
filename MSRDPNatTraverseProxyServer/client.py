@@ -1,28 +1,28 @@
 #!/user/bin/python3
 # coding: utf-8
-# 文件：computer.py
+# 文件：client.py
 # 作者：Christopher Lee
 # 博客：http://www.cnblogs.com/chriscabin
 # 主页：https://www.github.com/chrisleegit
 # 邮箱：christopherlee1993@outlook.com
-# 功能：把计算机信息相关的封装到该类中,统一管理
+# 功能：把客户端信息相关的封装到该类中,统一管理
 # 参数：无
 # 版本：0.1
 # 备注：无
 # 日志：无
 
 
-class Computer(object):
+class Client(object):
     """
-    描述一台在线的计算机信息的类
+    描述一个在线的客户端的类
     """
     def __init__(self, c_id=0, g_id=0, name=None, description=None):
         """
         构造函数
-        :param c_id: 计算机分配到的id
-        :param g_id: 计算机所在的分组g_id
-        :param name: 计算机的名称
-        :param description: 计算机的详细描述
+        :param c_id: 客户端分配到的id
+        :param g_id: 客户端所在的分组g_id
+        :param name: 客户端标记的名称
+        :param description: 客户端的详细描述
         :return: None
         """
         self._id = c_id
@@ -33,12 +33,12 @@ class Computer(object):
         self._tunnel_port = -1
         self._is_under_control = False
         self._peered_remote_id = -1
-        self._keep_alive_count = 5
+        self._keep_alive_count = 10
 
     @property
     def id(self):
         """
-        返回计算机的id
+        返回客户端的id
         :return: id
         """
         return self._id
@@ -46,7 +46,7 @@ class Computer(object):
     @property
     def g_id(self):
         """
-        返回该计算机所在的分组g_id
+        返回该客户端所在的分组g_id
         :return: g_id
         """
         return self._g_id
@@ -54,7 +54,7 @@ class Computer(object):
     @g_id.setter
     def g_id(self, value):
         """
-        设置该计算机的分组g_id
+        设置该客户端的分组g_id
         :param value: 分组号
         :return: 无
         """
@@ -66,7 +66,7 @@ class Computer(object):
     @property
     def name(self):
         """
-        返回计算机的名称
+        返回客户端的名称
         :return: name
         """
         return self._name
@@ -74,7 +74,7 @@ class Computer(object):
     @name.setter
     def name(self, value):
         """
-        设置计算机的名称
+        设置客户端的名称
         :param value: 名称
         :return: 无
         """
@@ -86,7 +86,7 @@ class Computer(object):
     @property
     def description(self):
         """
-        获得计算机的描述信息
+        获得客户端的描述信息
         :return: 描述信息
         """
         return self._description
@@ -94,7 +94,7 @@ class Computer(object):
     @description.setter
     def description(self, value):
         """
-        设置计算机的描述信息
+        设置客户端的描述信息
         :param value: 描述信息
         :return: 无
         """
@@ -126,7 +126,7 @@ class Computer(object):
     @property
     def tunnel_port(self):
         """
-        获取该计算机获得的隧道端口号
+        获取该客户端获得的隧道端口号
         :return: 端口号
         """
         return self._tunnel_port
@@ -134,7 +134,7 @@ class Computer(object):
     @tunnel_port.setter
     def tunnel_port(self, value):
         """
-        设置该计算机分配到的隧道端口号
+        设置该客户端分配到的隧道端口号
         :param value: 端口号
         :return: 无
         """
@@ -146,7 +146,7 @@ class Computer(object):
     @property
     def is_under_control(self):
         """
-        获取当前计算机是否正在被控制
+        获取当前客户端是否正在被控制
         :return: True/False
         """
         return self._is_under_control
@@ -154,7 +154,7 @@ class Computer(object):
     @is_under_control.setter
     def is_under_control(self, value):
         """
-        设置此计算机是否正在被控制的状态
+        设置此客户端是否正在被控制的状态
         :param value: True/False
         :return: 无
         """
@@ -166,7 +166,7 @@ class Computer(object):
     @property
     def peered_remote_id(self):
         """
-        获取被远程控制的计算机的id
+        获取被远程控制的客户端的id
         :return: remote_id
         """
         return self._peered_remote_id
@@ -174,8 +174,8 @@ class Computer(object):
     @peered_remote_id.setter
     def peered_remote_id(self, value):
         """
-        设置配对的计算机的id
-        :param value: 远程计算机的id
+        设置配对的客户端的id
+        :param value: 远程客户端的id
         :return: 无
         """
         if isinstance(value, int):
@@ -222,16 +222,16 @@ class Computer(object):
         return self.__str__()
 
 
-class ComputerGroup:
+class ClientGroup:
     """
-    该类用来存放多个计算机的组
+    该类用来存放多个客户端的组
     """
     def __init__(self, g_id=0, name=None, capacity=50):
         """
         构造函数
         :param g_id: 该分组的id
         :param name: 该分组的名称
-        :param capacity: 该分组最多可容纳的计算机个数
+        :param capacity: 该分组最多可容纳的客户端个数
         :return: 无
         """
         self._id = g_id
@@ -262,7 +262,7 @@ class ComputerGroup:
     @property
     def capacity(self):
         """
-        获得分组最多可以容纳的计算机个数
+        获得分组最多可以容纳的客户端个数
         :return: 个数
         """
         return self._capacity
@@ -270,7 +270,7 @@ class ComputerGroup:
     @capacity.setter
     def capacity(self, value):
         """
-        设置分组可以容纳的计算机个数
+        设置分组可以容纳的客户端个数
         :param value: 最多的成员个数
         :return: 无
         """
@@ -279,78 +279,78 @@ class ComputerGroup:
         else:
             raise TypeError("设置的值不是int类型")
 
-    def has_member(self, computer_id):
+    def has_member(self, client_id):
         """
-        通过使用成员的id,即计算机的id来检查是否存在于分组中
-        :param computer_id: 计算机的id
+        通过使用成员的id,即客户端的id来检查是否存在于分组中
+        :param client_id: 客户端的id
         :return: True/False
         """
-        return computer_id in self._members.keys()
+        return client_id in self._members.keys()
 
-    def append(self, computer):
+    def append(self, client):
         """
-        向分组中添加计算机成员
-        :param computer: Computer类型的实例
+        向分组中添加客户端成员
+        :param client: client类型的实例
         :return: True/False, 指示是否添加成功
         """
-        if isinstance(computer, Computer):
+        if isinstance(client, Client):
             # 首先需要检查是否到达最大的容量上限
             if len(self._members) == self._capacity:
                 return False
             else:
                 # 检查是否有该成员存在
-                if self.has_member(computer.id):
+                if self.has_member(client.id):
                     return False
                 else:
-                    self._members[computer.id] = computer
+                    self._members[client.id] = client
                     return True
         else:
-            raise TypeError("添加的类型不是Computer类型")
+            raise TypeError("添加的类型不是Client类型")
 
-    def remove(self, computer_id):
+    def remove(self, client_id):
         """
-        从分组中移除计算机成员
-        :param computer_id: 指定计算机的id
+        从分组中移除客户端成员
+        :param client_id: 指定客户端的id
         :return: True/False
         """
-        if self.has_member(computer_id):
-            self._members.pop(computer_id)
+        if self.has_member(client_id):
+            self._members.pop(client_id)
             return True
         else:
             return False
 
-    def get_member(self, computer_id):
+    def get_member(self, client_id):
         """
-        从成员列表中获得指定的id的计算机实例
-        :param computer_id: 计算机的id
-        :return: None/Computer类型的对象实例
+        从成员列表中获得指定的id的客户端实例
+        :param client_id: 客户端的id
+        :return: None/Client类型的对象实例
         """
-        if self.has_member(computer_id):
-            return self._members[computer_id]
+        if self.has_member(client_id):
+            return self._members[client_id]
         else:
             return None
 
-    def set_member(self, computer):
+    def set_member(self, client):
         """
         设置分组中的成员实例,通过此接口可以更改一个成员
-        :param computer: Computer类型的对象实例
+        :param client: Client类型的对象实例
         :return: True/False
         """
-        if self.remove(computer.id):
-            return self.append(computer)
+        if self.remove(client.id):
+            return self.append(client)
         else:
             return False
 
     def count(self):
         """
-        获得计算组成员个数
+        获得客户端组成员个数
         :return: 个数
         """
         return len(self._members)
 
     def get_members(self):
         """
-        获得计算机组成员
+        获得客户端组成员
         :return: dict
         """
         return self._members
