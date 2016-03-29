@@ -967,15 +967,23 @@ namespace MSRDPNatTraverseClient
 
                 if (localComputer.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 10))
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 5))
                     {
-                        Debug.WriteLine("我还在线！");
                         UpdateRemoteMachineList();
                     }
+                    else
+                    {
+                        // 表示连接失败，无法和服务器建立连接
+                        this.Invoke(new Action(() =>
+                        {
+                            SetServerConnectionStatus(false);
+                            Stop();
+                        }));
+                    }
                 }
-                // 每4s更新一次
-                // 服务器会在10s收不到更新，自动判断为下线
-                Thread.Sleep(4 * 1000);
+                // 每1s更新一次
+                // 服务器会在5s后收不到新值，自动判断为下线
+                Thread.Sleep(1 * 1000);
             }
         }
 
@@ -1074,8 +1082,7 @@ namespace MSRDPNatTraverseClient
         /// <param name="isProgressBarVisible">是否需要显示进度条</param>
         private void ShowStatusStrip(string content)
         {
-            toolStripStatusLabelSpace.Visible = true;
-            toolStripStatusLabelSpace.Text = content;
+            toolStripStatusLabel.Text = content;
         }
 
         /// <summary>
@@ -1085,7 +1092,7 @@ namespace MSRDPNatTraverseClient
         {
             try
             {
-                toolStripStatusLabelSpace.Visible = false;
+                toolStripStatusLabel.Text = "";
             }
             catch { }
         }
