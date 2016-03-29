@@ -50,6 +50,11 @@ namespace MSRDPNatTraverseClient
         CancellationTokenSource cts = null;
 
         /// <summary>
+        /// 定时器，用于检测要不要尝试重新连接代理服务器，重新启动服务
+        /// </summary>
+        private System.Windows.Forms.Timer autoRestartServiceTimer = new System.Windows.Forms.Timer();
+
+        /// <summary>
         /// 在线计算机列表
         /// </summary>
         private List<int> onlineComputerList = new List<int>();
@@ -66,9 +71,6 @@ namespace MSRDPNatTraverseClient
         public MainForm()
         {
             InitializeComponent();
-
-            // 显示这些信息
-            LoadConfig();
         }
 
         #region 菜单项及按钮等事件处理函数集合
@@ -339,6 +341,17 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
+        /// 窗体显示的时候触发
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            // 加载配置
+            LoadConfig();
+        }
+
+        /// <summary>
         /// 主窗口关闭时的处理
         /// </summary>
         /// <param name="sender"></param>
@@ -351,6 +364,10 @@ namespace MSRDPNatTraverseClient
                 // 保存当前的配置信息
                 programConfig.Computer = localComputer;
                 FileOperation.SaveConfig(programConfig);
+
+                // 停止定时器
+                autoRestartServiceTimer.Enabled = false;
+                autoRestartServiceTimer.Dispose();
             }
             else
             {
@@ -366,6 +383,10 @@ namespace MSRDPNatTraverseClient
                     // 保存当前的配置信息
                     programConfig.Computer = localComputer;
                     FileOperation.SaveConfig(programConfig);
+
+                    // 停止定时器
+                    autoRestartServiceTimer.Enabled = false;
+                    autoRestartServiceTimer.Dispose();
                 }
             }
         }
@@ -531,8 +552,11 @@ namespace MSRDPNatTraverseClient
         /// <summary>
         /// 客户端启动相关服务
         /// </summary>
-        private async void Start()
+        private async void Start(bool enableInteractive = true)
         {
+            //
+            tryRestart = false;
+
             // 更新按钮的状态
             startButton.Enabled = false;
             stopButton.Enabled = true;
@@ -542,6 +566,8 @@ namespace MSRDPNatTraverseClient
             // 更新菜单的状态
             StartToolStripMenuItem.Enabled = false;
             StopToolStripMenuItem.Enabled = true;
+
+            ShowStatusStrip("正在启动服务，请稍等...");
 
             // 根据协议要求，首先获取一个id，标记在线注册
             localComputer.ID = await Client.GetComputerIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort);
@@ -562,6 +588,15 @@ namespace MSRDPNatTraverseClient
                     // 创建两个线程分别负责检查在线状态和检查请求状态信息
                     keepAliveThread = new Thread(KeepAliveThread);
                     queryStatusThread = new Thread(QueryStatusThread);
+
+                    // 检查计时器有没有启动
+                    if (autoRestartServiceTimer.Enabled == false)
+                    {
+                        autoRestartServiceTimer.Interval = 30 * 1000;
+                        autoRestartServiceTimer.Enabled = true;
+                        autoRestartServiceTimer.Start();
+                        autoRestartServiceTimer.Tick += AutoRestartServiceTimer_Tick;
+                    }
 
                     cts = new CancellationTokenSource();
 
@@ -589,10 +624,16 @@ namespace MSRDPNatTraverseClient
             else
             {
                 Debug.WriteLine("获取id失败");
-                MessageBox.Show(string.Format("启动服务失败，请确保网络状态正常，代理服务器: {0} 工作正常后再次尝试！", proxyServer.Name), "警告消息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // 如果是监视线程尝试自动启动服务，就不需要对话框提示
+                if (enableInteractive)
+                {
+                    MessageBox.Show(string.Format("启动服务失败，请确保网络状态正常，并且代理服务器: {0} 工作正常后再次尝试！", proxyServer.Name), "警告消息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
                 SetServerConnectionStatus(false);
                 Stop();
+                tryRestart = true;
             }
+            HideStatusStrip();
         }
 
         /// <summary>
@@ -959,15 +1000,42 @@ namespace MSRDPNatTraverseClient
 
                 if (localComputer.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 4))
+                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 6))
                     {
-                        Debug.WriteLine("我还在线！");
                         UpdateRemoteMachineList();
                     }
+                    else
+                    {
+                        // 表示连接失败，无法和服务器建立连接
+                        this.Invoke(new Action(() =>
+                        {
+                            SetServerConnectionStatus(false);
+                            ShowStatusStrip("与代理服务器的连接已经断开，程序将会在一段时间后尝试重新启动服务...");
+                            Stop();
+                            tryRestart = true;
+                        }));
+                    }
                 }
-                // 每25s更新一次
-                // 服务器会在30s收不到更新，自动判断为下线
-                Thread.Sleep(2 * 1000);
+                // 每1s更新一次
+                // 服务器会在6s后收不到新值，自动判断为下线
+                Thread.Sleep(1 * 1000);
+            }
+        }
+
+        private bool tryRestart = false;
+        /// <summary>
+        /// 检查是否需要重启服务
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AutoRestartServiceTimer_Tick(object sender, EventArgs e)
+        {
+            if (tryRestart)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    Start(false);
+                }));
             }
         }
 
@@ -1066,8 +1134,7 @@ namespace MSRDPNatTraverseClient
         /// <param name="isProgressBarVisible">是否需要显示进度条</param>
         private void ShowStatusStrip(string content)
         {
-            toolStripStatusLabelSpace.Visible = true;
-            toolStripStatusLabelSpace.Text = content;
+            toolStripStatusLabel.Text = content;
         }
 
         /// <summary>
@@ -1077,7 +1144,7 @@ namespace MSRDPNatTraverseClient
         {
             try
             {
-                toolStripStatusLabelSpace.Visible = false;
+                toolStripStatusLabel.Text = "";
             }
             catch { }
         }
