@@ -24,9 +24,48 @@ namespace MSRDPNatTraverseClient.Config
         Computer.Computer localComputer = null;
         private int selectedServerIndex = -1;
         private int proxyServerListenPort = 9000;
+        private int queryStatusInterval = 4;
+        private int keepAliveInterval = 10;
+        private bool acceptControlRequest = false;
         #endregion
 
         #region 属性
+        public bool AcceptControlRequest
+        {
+            get
+            {
+                return acceptControlRequest;
+            }
+            set
+            {
+                acceptControlRequest = value;
+            }
+        }
+
+        public int QueryStatusInterval
+        {
+            get
+            {
+                return queryStatusInterval;
+            }
+            set
+            {
+                queryStatusInterval = value;
+            }
+        }
+
+        public int KeepAliveInterval
+        {
+            get
+            {
+                return keepAliveInterval;
+            }
+            set
+            {
+                keepAliveInterval = value;
+            }
+        }
+
         public bool AutoStartup
         {
             get

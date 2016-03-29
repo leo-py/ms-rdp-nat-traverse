@@ -164,6 +164,43 @@ namespace MSRDPNatTraverseClient
             }
         }
 
+
+        private async void acceptControlRequestCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            var cb = sender as CheckBox;
+            if (cb != null)
+            {
+                // 考虑没有启动服务的情况下，是可以随意修改的
+               if (startButton.Enabled == false)
+                {
+                    if (cb.Checked)
+                    {
+                        if (await AcceptControlRequest(true))
+                        {
+                            Debug.WriteLine("修改状态成功");
+                        }
+                        else
+                        {
+                            cb.Checked = !cb.Checked;
+                        }
+                    }
+                    else
+                    {
+                        if (await AcceptControlRequest(false))
+                        {
+                            Debug.WriteLine("修改状态成功");
+                        }
+                        else
+                        {
+                            cb.Checked = !cb.Checked;
+                        }
+                    }
+                }
+
+                programConfig.AcceptControlRequest = cb.Checked;
+            }
+        }
+
         /// <summary>
         /// 启动按钮单击
         /// </summary>
@@ -585,6 +622,8 @@ namespace MSRDPNatTraverseClient
                 {
                     Debug.WriteLine("成功上传本机信息到代理服务器中");
 
+                    await AcceptControlRequest(programConfig.AcceptControlRequest);
+
                     // 创建两个线程分别负责检查在线状态和检查请求状态信息
                     keepAliveThread = new Thread(KeepAliveThread);
                     queryStatusThread = new Thread(QueryStatusThread);
@@ -720,9 +759,9 @@ namespace MSRDPNatTraverseClient
             //}
 
             Debug.WriteLine("关闭所有隧道连接");
-            foreach (var item in Process.GetProcessesByName("plink"))
+            foreach (var item in tunnelList)
             {
-                item.Kill();
+                item.Stop();
             }
         }
 
@@ -750,6 +789,7 @@ namespace MSRDPNatTraverseClient
                 {
                     // 实验表明，此处必须要延时等待一下，否则可能建立隧道会失败
                     Thread.Sleep(1000);
+                    tunnelList.Add(tunnel);
 
                     // 最多尝试查询次数
                     int tryCount = 5;
@@ -793,7 +833,14 @@ namespace MSRDPNatTraverseClient
         /// <returns></returns>
         private async Task<bool> PrepareToControlRemoteComputerAsync(int remoteId)
         {
-            // 首先，要检查远程计算机是否正在被控制中
+            // 看看对方是否允许被控制
+            if (await Client.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId) == remoteId)
+            {
+                MessageBox.Show(string.Format("计算机({0})拒绝接收控制请求，请确保对方允许被控制！", remoteId), "警告信息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            // 要检查远程计算机是否正在被控制中
             if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
             {
                 MessageBox.Show(string.Format("计算机(id: {0})正在被其他计算机远程控制中，拒绝请求！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -809,7 +856,7 @@ namespace MSRDPNatTraverseClient
                     {
                         Debug.WriteLine("设置目标计算机配对id成功");
                         // 等待对方响应请求
-                        int tryCount = 20;
+                        int tryCount = 60;
                         while (true)
                         {
                             if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
@@ -884,6 +931,46 @@ namespace MSRDPNatTraverseClient
                 return false;
             }
         }
+
+        /// <summary>
+        /// 接收远程控制与否
+        /// </summary>
+        /// <param name="flag"></param>
+        /// <returns></returns>
+        private async Task<bool> AcceptControlRequest(bool flag)
+        {
+            // 检查是不是已经被控制了，如果被控制了的话，不可修改
+            if (!flag)
+            {
+                if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                {
+                    MessageBox.Show("当前计算机正在被控制中，无法修改此选项！请在断开连接后操作！", "警告信息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+                else
+                {
+                    if (await Client.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, localComputer.ID))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                if (await Client.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, -1))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
         #endregion
 
         #region 后台轮询和保持在线状态线程
@@ -902,86 +989,92 @@ namespace MSRDPNatTraverseClient
                     break;
                 }
 
-                // 查询有没有正在被控制
-                // 如果计算机一直被控制中，将会被锁定，而无法被其他计算机连接
-                if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                if (programConfig.AcceptControlRequest)
                 {
-                    // 查询隧道状态
-                    if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                    // 查询有没有正在被控制
+                    // 如果计算机一直被控制中，将会被锁定，而无法被其他计算机连接
+                    if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
                     {
-                        Debug.WriteLine("隧道状态正常，本机正在被控制中");
-                        ShowStatusStrip(string.Format("本机与远程计算机({0})建立联系，可被远程登录...", localComputer.PeeredId));
-                    }
-                    else
-                    {
-                        // 重新启动隧道
-                        CloseAllSSHReverseTunnels();
-                        tunnel.Start();
-
-                        HideStatusStrip();
-                    }
-
-                    // 查询配对的计算机是否在线
-                    if (await Client.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.PeeredId))
-                    {
-                        Debug.WriteLine(string.Format("远程计算机{0}依然在线", localComputer.PeeredId));
-                    }
-                    else
-                    {
-                        // 解除锁定，从而保证本机可以被其他计算机控制
-                        if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, false))
+                        // 查询隧道状态
+                        if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
                         {
-                            HideStatusStrip();
-                            Debug.WriteLine("解除本机锁定成功，可以接收其他计算机的请求");
-                        }
-                    }
-                }
-                else
-                {
-                    bool ck = true;
-                    // 查询有没有控制请求
-                    if (await Client.GetControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
-                    {
-                        // 获取匹配的计算机id
-                        localComputer.PeeredId = await Client.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
-
-                        if (localComputer.PeeredId != -1)
-                        {
-                            Debug.WriteLine("请求远程控制的计算机id: " + localComputer.PeeredId.ToString());
-                            ShowStatusStrip(string.Format("收到来自计算机({0})的远程控制请求，正在处理...", localComputer.PeeredId));
-                            // 准备连接
-                            if (await PrepareToBeUnderControlAsync())
-                            {
-                                ck = false;
-                                Debug.WriteLine("准备建立连接工作已经完毕，等待对方远程登录。");
-                                ShowStatusStrip(string.Format("来自远程计算机({0})的控制请求已经处理完毕，对方可以正常远程登录", localComputer.PeeredId));
-                            }
-                            else
-                            {
-                                Debug.WriteLine("准备建立连接工作失败！");
-                                HideStatusStrip();
-                            }
+                            Debug.WriteLine("隧道状态正常，本机正在被控制中");
+                            ShowStatusStrip(string.Format("本机与远程计算机({0})建立联系，可被远程登录...", localComputer.PeeredId));
                         }
                         else
                         {
-                            Debug.WriteLine("获取远程配对计算机id失败");
+                            // 重新启动隧道
+                            CloseAllSSHReverseTunnels();
+                            if (tunnel.Start())
+                            {
+                                tunnelList.Add(tunnel);
+                            }
+
                             HideStatusStrip();
                         }
-                    }
 
-                    if (ck)
-                    {
-                        if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                        // 查询配对的计算机是否在线
+                        if (await Client.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.PeeredId))
                         {
-                            CloseAllSSHReverseTunnels();
-                            HideStatusStrip();
+                            Debug.WriteLine(string.Format("远程计算机{0}依然在线", localComputer.PeeredId));
+                        }
+                        else
+                        {
+                            // 解除锁定，从而保证本机可以被其他计算机控制
+                            if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, false))
+                            {
+                                HideStatusStrip();
+                                Debug.WriteLine("解除本机锁定成功，可以接收其他计算机的请求");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        bool ck = true;
+                        // 查询有没有控制请求
+                        if (await Client.GetControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                        {
+                            // 获取匹配的计算机id
+                            localComputer.PeeredId = await Client.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
+
+                            if (localComputer.PeeredId != -1)
+                            {
+                                Debug.WriteLine("请求远程控制的计算机id: " + localComputer.PeeredId.ToString());
+                                ShowStatusStrip(string.Format("收到来自计算机({0})的远程控制请求，正在处理...", localComputer.PeeredId));
+                                // 准备连接
+                                if (await PrepareToBeUnderControlAsync())
+                                {
+                                    ck = false;
+                                    Debug.WriteLine("准备建立连接工作已经完毕，等待对方远程登录。");
+                                    ShowStatusStrip(string.Format("来自远程计算机({0})的控制请求已经处理完毕，对方可以正常远程登录", localComputer.PeeredId));
+                                }
+                                else
+                                {
+                                    Debug.WriteLine("准备建立连接工作失败！");
+                                    HideStatusStrip();
+                                }
+                            }
+                            else
+                            {
+                                Debug.WriteLine("获取远程配对计算机id失败");
+                                HideStatusStrip();
+                            }
+                        }
+
+                        if (ck)
+                        {
+                            if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                            {
+                                CloseAllSSHReverseTunnels();
+                                HideStatusStrip();
+                            }
                         }
                     }
                 }
                 //
-                // 每隔2s查询一次状态
+                // 每隔一段时间查询一次状态
                 //
-                Thread.Sleep(2 * 1000);
+                Thread.Sleep(programConfig.QueryStatusInterval * 1000);
             }
         }
 
@@ -1017,8 +1110,8 @@ namespace MSRDPNatTraverseClient
                     }
                 }
                 // 每1s更新一次
-                // 服务器会在6s后收不到新值，自动判断为下线
-                Thread.Sleep(1 * 1000);
+                // 服务器会在一段时间后收不到新值，自动判断为下线
+                Thread.Sleep(programConfig.KeepAliveInterval * 1000);
             }
         }
 
@@ -1086,6 +1179,7 @@ namespace MSRDPNatTraverseClient
             // checkbox状态
             autoStartCheckBox.Checked = programConfig.AutoStartup;
             closeWithoutQuitCheckBox.Checked = programConfig.EnableBackgroundMode;
+            acceptControlRequestCheckBox.Checked = programConfig.AcceptControlRequest;
 
             // 显示代理服务器信息
             if (programConfig.SelectedServerIndex != -1)

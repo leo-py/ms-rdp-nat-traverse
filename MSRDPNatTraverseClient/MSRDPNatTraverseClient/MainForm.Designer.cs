@@ -76,6 +76,7 @@
             this.StartToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.StopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ExitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.acceptControlRequestCheckBox = new System.Windows.Forms.CheckBox();
             this.menuStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -258,6 +259,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.acceptControlRequestCheckBox);
             this.groupBox3.Controls.Add(this.quitButton);
             this.groupBox3.Controls.Add(this.stopButton);
             this.groupBox3.Controls.Add(this.startButton);
@@ -427,6 +429,13 @@
             resources.ApplyResources(this.ExitToolStripMenuItem, "ExitToolStripMenuItem");
             this.ExitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
+            // acceptControlRequestCheckBox
+            // 
+            resources.ApplyResources(this.acceptControlRequestCheckBox, "acceptControlRequestCheckBox");
+            this.acceptControlRequestCheckBox.Name = "acceptControlRequestCheckBox";
+            this.acceptControlRequestCheckBox.UseVisualStyleBackColor = true;
+            this.acceptControlRequestCheckBox.CheckedChanged += new System.EventHandler(this.acceptControlRequestCheckBox_CheckedChanged);
+            // 
             // MainForm
             // 
             resources.ApplyResources(this, "$this");
@@ -512,6 +521,7 @@
         private System.Windows.Forms.ToolStripMenuItem StartToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem StopToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ExitToolStripMenuItem;
+        private System.Windows.Forms.CheckBox acceptControlRequestCheckBox;
     }
 }
 
