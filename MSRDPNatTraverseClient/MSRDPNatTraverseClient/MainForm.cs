@@ -15,7 +15,7 @@ using MSRDPNatTraverseClient.Utility;
 using MSRDPNatTraverseClient.SSHReverseTunnel;
 using Newtonsoft.Json;
 using System.Diagnostics;
-using MSRDPNatTraverseClient.Computer;
+using MSRDPNatTraverseClient.Client;
 using MSRDPNatTraverseClient.MainFom;
 
 namespace MSRDPNatTraverseClient
@@ -24,9 +24,9 @@ namespace MSRDPNatTraverseClient
     {
         #region 一些使用到的全局变量
         /// <summary>
-        /// 本地计算机的对象实例
+        /// 本地客户端的对象实例
         /// </summary>
-        private Computer.Computer localComputer = null;
+        private Client.Client client = null;
 
         /// <summary>
         /// 配置对象实例
@@ -55,9 +55,9 @@ namespace MSRDPNatTraverseClient
         private System.Windows.Forms.Timer autoRestartServiceTimer = new System.Windows.Forms.Timer();
 
         /// <summary>
-        /// 在线计算机列表
+        /// 在线客户端列表
         /// </summary>
-        private List<int> onlineComputerList = new List<int>();
+        private List<int> onlineClientList = new List<int>();
 
         // tunnel列表，可以存放备用隧道。防止连接失败。
         List<SSHReverseTunnel.SSHReverseTunnel> tunnelList = new List<SSHReverseTunnel.SSHReverseTunnel>();
@@ -105,23 +105,23 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
-        /// 编辑本地计算机菜单点击事件
+        /// 编辑本地客户端菜单点击事件
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void EditLocalMachineToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
-            EditComputer();
+            EditClient();
         }
 
         /// <summary>
-        /// 保存本地计算机菜单项点击事件
+        /// 保存本地客户端菜单项点击事件
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void SaveLocalMachineToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveComputer();
+            SaveClient();
         }
 
         /// <summary>
@@ -232,7 +232,7 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
-        /// 更新计算机列表
+        /// 更新客户端列表
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -253,26 +253,26 @@ namespace MSRDPNatTraverseClient
             {
                 if (bt.Text == "连接")
                 {
-                    if (remoteComputerListBox.SelectedIndex == -1)
+                    if (remoteClientListBox.SelectedIndex == -1)
                     {
                         return;
                     }
 
-                    var remoteId = onlineComputerList[remoteComputerListBox.SelectedIndex];
-                    localComputer.PeeredId = remoteId;
+                    var remoteId = onlineClientList[remoteClientListBox.SelectedIndex];
+                    client.PeeredId = remoteId;
 
-                    ShowStatusStrip(string.Format("正在向远程计算机({0})请求控制，请稍等...", remoteId));
+                    ShowStatusStrip(string.Format("正在向远程客户端发送({0})控制请求，请稍等...", remoteId));
 
-                    if (await PrepareToControlRemoteComputerAsync(remoteId))
+                    if (await PrepareToControlRemoteClientAsync(remoteId))
                     {
                         // 获取隧道端口
-                        int tunnelPort = await Client.GetTunnelPortAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false);
+                        int tunnelPort = await MainFom.Protocol.GetTunnelPortAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false);
                         if (tunnelPort != -1)
                         {
-                            Debug.WriteLine("获取到远程计算机的隧道：" + tunnelPort.ToString());
+                            Debug.WriteLine("获取到远程客户端的隧道：" + tunnelPort.ToString());
                             bt.Text = "断开";
-                            remoteComputerListBox.Enabled = false;
-                            ShowStatusStrip(string.Format("与远程计算机({0})已经建立连接。地址：{1}:{2}", remoteId, proxyServer.Hostname, tunnelPort));
+                            remoteClientListBox.Enabled = false;
+                            ShowStatusStrip(string.Format("与远程客户端({0})已经建立连接。地址：{1}:{2}", remoteId, proxyServer.Hostname, tunnelPort));
                             //MessageBox.Show("请打开远程控制桌面程序，输入: " + string.Format("{0}:{1}", proxyServer.Hostname, tunnelPort));
                             OpenRDPProgram(proxyServer.Hostname, tunnelPort);
                         }  
@@ -284,18 +284,18 @@ namespace MSRDPNatTraverseClient
                 }
                 else
                 {
-                    if (await DisconnectToRemoteComputer(localComputer.PeeredId))
+                    if (await DisconnectToRemoteClient(client.PeeredId))
                     {
                         Debug.WriteLine("断开连接");
                         bt.Text = "连接";
-                        remoteComputerListBox.Enabled = true;
+                        remoteClientListBox.Enabled = true;
                     }
                 }
             }
         }
 
         /// <summary>
-        /// 计算机信息属性变化
+        /// 客户端信息属性变化
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -399,7 +399,7 @@ namespace MSRDPNatTraverseClient
             if (canQuit)
             {
                 // 保存当前的配置信息
-                programConfig.Computer = localComputer;
+                programConfig.Client = client;
                 FileOperation.SaveConfig(programConfig);
 
                 // 停止定时器
@@ -418,7 +418,7 @@ namespace MSRDPNatTraverseClient
                 {
                     Stop();
                     // 保存当前的配置信息
-                    programConfig.Computer = localComputer;
+                    programConfig.Client = client;
                     FileOperation.SaveConfig(programConfig);
 
                     // 停止定时器
@@ -432,9 +432,9 @@ namespace MSRDPNatTraverseClient
 
         #region 核心函数
         /// <summary>
-        /// 编辑当前计算机信息
+        /// 编辑当前客户端信息
         /// </summary>
-        private void EditComputer()
+        private void EditClient()
         {
             // 将编辑窗口改为可写状态
             machineNameTextBox.ReadOnly = false;
@@ -443,9 +443,9 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
-        /// 保存当前计算机信息
+        /// 保存当前客户端信息
         /// </summary>
-        private void SaveComputer()
+        private void SaveClient()
         {
             // 重置为只读状态
             machineNameTextBox.ReadOnly = true;
@@ -453,12 +453,12 @@ namespace MSRDPNatTraverseClient
             RDPPortTextBox.ReadOnly = true;
 
             // 保存所有信息
-            localComputer.Name = machineNameTextBox.Text;
-            localComputer.Description = machineDescriptionTextBox.Text;
-            localComputer.RDPPort = int.Parse(RDPPortTextBox.Text);
+            client.Name = machineNameTextBox.Text;
+            client.Description = machineDescriptionTextBox.Text;
+            client.RDPPort = int.Parse(RDPPortTextBox.Text);
 
             // 告诉配置信息类
-            programConfig.Computer = localComputer;
+            programConfig.Client = client;
         }
 
         /// <summary>
@@ -533,10 +533,10 @@ namespace MSRDPNatTraverseClient
         }
 
         /// <summary>
-        /// 显示计算机信息
+        /// 显示客户端信息
         /// </summary>
         /// <param name="machine"></param>
-        private void ShowComputerInfo(Computer.Computer machine)
+        private void ShowClientInfo(Client.Client machine)
         {
             machineNameTextBox.Text = machine.Name;
             machineIDTextBox.Text = machine.ID.ToString();
@@ -606,27 +606,30 @@ namespace MSRDPNatTraverseClient
 
             ShowStatusStrip("正在启动服务，请稍等...");
 
-            // 根据协议要求，首先获取一个id，标记在线注册
-            localComputer.ID = await Client.GetComputerIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort);
+            // 关闭可能不小心打开的隧道进程
+            CloseAllSSHReverseTunnels();
 
-            if (localComputer.ID != -1)
+            // 根据协议要求，首先获取一个id，标记在线注册
+            client.ID = await MainFom.Protocol.GetClientIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort);
+
+            if (client.ID != -1)
             {
-                Debug.WriteLine("成功获取到id: " + localComputer.ID.ToString());
+                Debug.WriteLine("成功获取到id: " + client.ID.ToString());
 
                 SetServerConnectionStatus(true);
                 // 更新显示
-                ShowComputerInfo(localComputer);
+                ShowClientInfo(client);
 
                 // 上传本机信息
-                if (await Client.PostComputerInformationAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer))
+                if (await MainFom.Protocol.PostClientInformationAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client))
                 {
                     Debug.WriteLine("成功上传本机信息到代理服务器中");
 
                     await AcceptControlRequest(programConfig.AcceptControlRequest);
 
                     // 创建两个线程分别负责检查在线状态和检查请求状态信息
-                    keepAliveThread = new Thread(KeepAliveThread);
-                    queryStatusThread = new Thread(QueryStatusThread);
+                    keepAliveThread = new Thread(this.KeepAliveThread);
+                    queryStatusThread = new Thread(this.QueryStatusThread);
 
                     // 检查计时器有没有启动
                     if (autoRestartServiceTimer.Enabled == false)
@@ -646,7 +649,7 @@ namespace MSRDPNatTraverseClient
                     Debug.WriteLine("启动查询本机状态请求的线程");
                     queryStatusThread.Start();
 
-                    // 自动更新在线的计算机列表
+                    // 自动更新在线的客户端列表
                     UpdateRemoteMachineList();
                 }
                 else
@@ -717,30 +720,30 @@ namespace MSRDPNatTraverseClient
         private async void UpdateRemoteMachineList()
         {
             // 向服务器请求获取列表
-            var dict = await Client.GetOnlineComputerListAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
+            var dict = await MainFom.Protocol.GetOnlineClientListAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID);
 
             if (dict != null)
             {
                 this.Invoke(new Action(() =>
                 {
                     // 看看有没有被选中的项目，如果没有的话，那就什么都不用管；否则要对选中的项目作记录
-                    int id = (remoteComputerListBox.SelectedIndex != -1) ? onlineComputerList[remoteComputerListBox.SelectedIndex] : -1;
+                    int id = (remoteClientListBox.SelectedIndex != -1) ? onlineClientList[remoteClientListBox.SelectedIndex] : -1;
 
-                    remoteComputerListBox.Items.Clear();
-                    onlineComputerList.Clear();
+                    remoteClientListBox.Items.Clear();
+                    onlineClientList.Clear();
                     for (int i = 0; i < dict.Count; i++)
                     {
-                        remoteComputerListBox.Items.Add(string.Format("{0}. {1}    {2}",
+                        remoteClientListBox.Items.Add(string.Format("{0}. {1}    {2}",
                             i + 1, dict.ElementAt(i).Key, dict.ElementAt(i).Value));
-                        onlineComputerList.Add(dict.ElementAt(i).Key);
+                        onlineClientList.Add(dict.ElementAt(i).Key);
                     }
 
                     // 查看之前选中的项目，如果有，还要继续保持选中
-                    for (int i = 0; i < onlineComputerList.Count; i++)
+                    for (int i = 0; i < onlineClientList.Count; i++)
                     {
-                        if (onlineComputerList[i] == id)
+                        if (onlineClientList[i] == id)
                         {
-                            remoteComputerListBox.SelectedIndex = i;
+                            remoteClientListBox.SelectedIndex = i;
                             return;
                         }
                     }
@@ -778,13 +781,15 @@ namespace MSRDPNatTraverseClient
         {
             // 存在控制请求后，会选择开始进行隧道建立
             // 首先，获得一个准许的隧道端口号
-            var tunnelPort = await Client.GetTunnelPortAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, true);
+            var tunnelPort = await MainFom.Protocol.GetTunnelPortAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, true);
+
+            CloseAllSSHReverseTunnels();
 
             // 确保端口号ok
             if (tunnelPort != -1)
             {
                 // 启动本地隧道进程，尝试和远程代理服务器建立隧道
-                tunnel = new SSHReverseTunnel.SSHReverseTunnel(localComputer, proxyServer, tunnelPort);
+                tunnel = new SSHReverseTunnel.SSHReverseTunnel(client, proxyServer, tunnelPort);
                 if (tunnel.Start())
                 {
                     // 实验表明，此处必须要延时等待一下，否则可能建立隧道会失败
@@ -797,7 +802,7 @@ namespace MSRDPNatTraverseClient
                     while (tryCount != 0)
                     {
                         // 隧道进程成功启动后，我们需要向远程服务器查询有没有成功建立隧道端口
-                        status = await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
+                        status = await MainFom.Protocol.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID);
 
                         if (status)
                         {
@@ -810,58 +815,84 @@ namespace MSRDPNatTraverseClient
                     if (status)
                     {
                         // 隧道成功建立，此时应当清除掉控制请求
-                        if (await Client.PostControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, false))
+                        if (await MainFom.Protocol.PostControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, false))
                         {
                             Debug.WriteLine("远程控制请求已经得到处理");
-                            if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, true))
+                            if (await MainFom.Protocol.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, true))
                             {
-                                tunnelList.Add(tunnel);
                                 Debug.WriteLine("已经标记为正在被控制状态");
                                 return true;
                             }
+                            else
+                            {
+                                CloseAllSSHReverseTunnels();
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            CloseAllSSHReverseTunnels();
+                            return false;
                         }
                     }
+                    else
+                    {
+                        CloseAllSSHReverseTunnels();
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
                 }
             }
-            return false;
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
-        /// 请求准备与远程计算机建立连接
+        /// 请求准备与远程客户端建立连接
         /// </summary>
         /// <param name="remoteId"></param>
         /// <returns></returns>
-        private async Task<bool> PrepareToControlRemoteComputerAsync(int remoteId)
+        private async Task<bool> PrepareToControlRemoteClientAsync(int remoteId)
         {
+            bool oldState = programConfig.AcceptControlRequest;
+            programConfig.AcceptControlRequest = false;
             // 看看对方是否允许被控制
-            if (await Client.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId) == remoteId)
+            if (await MainFom.Protocol.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId) == remoteId)
             {
-                MessageBox.Show(string.Format("计算机({0})拒绝接收控制请求，请确保对方允许被控制！", remoteId), "警告信息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(string.Format("客户端({0})拒绝接收控制请求，请确保对方允许被控制！", remoteId), "警告信息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                programConfig.AcceptControlRequest = oldState;
                 return false;
             }
 
-            // 要检查远程计算机是否正在被控制中
-            if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
+            // 要检查远程客户端是否正在被控制中
+            if (await MainFom.Protocol.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
             {
-                MessageBox.Show(string.Format("计算机(id: {0})正在被其他计算机远程控制中，拒绝请求！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(string.Format("客户端(id: {0})正在被其他客户端远程控制中，拒绝请求！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                programConfig.AcceptControlRequest = oldState;
                 return false;
             }
             else
             {
-                // 把需要控制的计算机的控制请求设置为true
-                if (await Client.PostControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, true))
+                // 把需要控制的客户端的控制请求设置为true
+                if (await MainFom.Protocol.PostControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, true))
                 {
-                    // 接下来，把自身的id告诉远程目标计算机
-                    if (await Client.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, localComputer.ID))
+                    // 接下来，把自身的id告诉远程目标客户端
+                    if (await MainFom.Protocol.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, client.ID))
                     {
-                        Debug.WriteLine("设置目标计算机配对id成功");
+                        Debug.WriteLine("设置目标客户端配对id成功");
                         // 等待对方响应请求
                         int tryCount = 60;
                         while (true)
                         {
-                            if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
+                            if (await MainFom.Protocol.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
                             {
-                                Debug.WriteLine("远程计算机的隧道已经成功建立，可以被远程访问。");
+                                Debug.WriteLine("远程客户端的隧道已经成功建立，可以被远程访问。");
+                                programConfig.AcceptControlRequest = oldState;
                                 return true;
                             }
                             else
@@ -869,7 +900,8 @@ namespace MSRDPNatTraverseClient
                                 tryCount--;
                                 if (tryCount == 0)
                                 {
-                                    MessageBox.Show(string.Format("申请远程控制计算机(id: {0})失败，请确保对方网络正常！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    MessageBox.Show(string.Format("申请远程控制客户端(id: {0})失败，请确保对方网络正常！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    programConfig.AcceptControlRequest = oldState;
                                     return false;
                                 }
                             }
@@ -878,37 +910,39 @@ namespace MSRDPNatTraverseClient
                     }
                     else
                     {
+                        programConfig.AcceptControlRequest = oldState;
                         return false;
                     }
                 }
                 else
                 {
                     // 可能是网络断开等原因，没有成功邀请
-                    MessageBox.Show(string.Format("远程计算机(id: {0})没有成功收到邀请，请确保双方网络正常！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(string.Format("远程客户端(id: {0})没有成功收到邀请，请确保双方网络正常！", remoteId), "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    programConfig.AcceptControlRequest = oldState;
                     return false;
                 }
             }
         }
 
         /// <summary>
-        /// 关闭与远程计算机的配对
+        /// 关闭与远程客户端的配对
         /// </summary>
         /// <param name="remoteId"></param>
         /// <returns></returns>
-        private async Task<bool> DisconnectToRemoteComputer(int remoteId)
+        private async Task<bool> DisconnectToRemoteClient(int remoteId)
         {
             if (remoteId != -1)
             {
                 // 要判断对方是否下线，不要无谓地发送取消消息
-                if (await Client.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
+                if (await MainFom.Protocol.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId))
                 {
                     // 直接向对方发送释放控制请求即可
-                    ShowStatusStrip(string.Format("正在向计算机({0})发送断开连接请求...", remoteId));
-                    if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false))
+                    ShowStatusStrip(string.Format("正在向客户端({0})发送断开连接请求...", remoteId));
+                    if (await MainFom.Protocol.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, remoteId, false))
                     {
                         Debug.WriteLine("已经发送了断开请求，等待对方断开连接。");
-                        MessageBox.Show(string.Format("已经断开与远程计算机({0})的连接!", localComputer.PeeredId), "提示信息", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        localComputer.PeeredId = -1;
+                        MessageBox.Show(string.Format("已经断开与远程客户端({0})的连接!", client.PeeredId), "提示信息", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        client.PeeredId = -1;
                         HideStatusStrip();
                         return true;
                     }
@@ -942,14 +976,14 @@ namespace MSRDPNatTraverseClient
             // 检查是不是已经被控制了，如果被控制了的话，不可修改
             if (!flag)
             {
-                if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                if (await MainFom.Protocol.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID))
                 {
-                    MessageBox.Show("当前计算机正在被控制中，无法修改此选项！请在断开连接后操作！", "警告信息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("当前客户端正在被控制中，无法修改此选项！请在断开连接后操作！", "警告信息", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return false;
                 }
                 else
                 {
-                    if (await Client.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, localComputer.ID))
+                    if (await MainFom.Protocol.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, client.ID))
                     {
                         return true;
                     }
@@ -961,7 +995,7 @@ namespace MSRDPNatTraverseClient
             }
             else
             {
-                if (await Client.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, -1))
+                if (await MainFom.Protocol.PostPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, -1))
                 {
                     return true;
                 }
@@ -975,7 +1009,7 @@ namespace MSRDPNatTraverseClient
 
         #region 后台轮询和保持在线状态线程
         /// <summary>
-        /// 该后台线程处理函数会定时查询计算机有没有控制请求等状态，供客户端使用
+        /// 该后台线程处理函数会定时查询客户端有没有控制请求等状态，供客户端使用
         /// </summary>
         /// <param name=""></param>
         private async void QueryStatusThread()
@@ -991,15 +1025,16 @@ namespace MSRDPNatTraverseClient
 
                 if (programConfig.AcceptControlRequest)
                 {
+                    bool flag = true;
                     // 查询有没有正在被控制
-                    // 如果计算机一直被控制中，将会被锁定，而无法被其他计算机连接
-                    if (await Client.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                    // 如果客户端一直被控制中，将会被锁定，而无法被其他客户端连接
+                    if (await MainFom.Protocol.GetIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID))
                     {
                         // 查询隧道状态
-                        if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                        if (await MainFom.Protocol.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID))
                         {
                             Debug.WriteLine("隧道状态正常，本机正在被控制中");
-                            ShowStatusStrip(string.Format("本机与远程计算机({0})建立联系，可被远程登录...", localComputer.PeeredId));
+                            ShowStatusStrip(string.Format("本机与远程客户端({0})建立联系，可被远程登录...", client.PeeredId));
                         }
                         else
                         {
@@ -1013,40 +1048,39 @@ namespace MSRDPNatTraverseClient
                             HideStatusStrip();
                         }
 
-                        // 查询配对的计算机是否在线
-                        if (await Client.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.PeeredId))
+                        // 查询配对的客户端是否在线
+                        if (await MainFom.Protocol.GetIsOnlineAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.PeeredId))
                         {
-                            Debug.WriteLine(string.Format("远程计算机{0}依然在线", localComputer.PeeredId));
+                            Debug.WriteLine(string.Format("远程客户端{0}依然在线", client.PeeredId));
                         }
                         else
                         {
-                            // 解除锁定，从而保证本机可以被其他计算机控制
-                            if (await Client.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, false))
+                            // 解除锁定，从而保证本机可以被其他客户端控制
+                            if (await MainFom.Protocol.PostIsUnderControlAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, false))
                             {
                                 HideStatusStrip();
-                                Debug.WriteLine("解除本机锁定成功，可以接收其他计算机的请求");
+                                Debug.WriteLine("解除本机锁定成功，可以接收其他客户端的请求");
                             }
                         }
                     }
                     else
                     {
-                        bool ck = true;
                         // 查询有没有控制请求
-                        if (await Client.GetControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
+                        if (await MainFom.Protocol.GetControlRequestAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID))
                         {
-                            // 获取匹配的计算机id
-                            localComputer.PeeredId = await Client.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID);
+                            // 获取匹配的客户端id
+                            client.PeeredId = await MainFom.Protocol.GetPeeredRemoteIdAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID);
 
-                            if (localComputer.PeeredId != -1)
+                            if (client.PeeredId != -1)
                             {
-                                Debug.WriteLine("请求远程控制的计算机id: " + localComputer.PeeredId.ToString());
-                                ShowStatusStrip(string.Format("收到来自计算机({0})的远程控制请求，正在处理...", localComputer.PeeredId));
+                                Debug.WriteLine("请求远程控制的客户端id: " + client.PeeredId.ToString());
+                                ShowStatusStrip(string.Format("收到来自客户端({0})的远程控制请求，正在处理...", client.PeeredId));
                                 // 准备连接
                                 if (await PrepareToBeUnderControlAsync())
                                 {
-                                    ck = false;
                                     Debug.WriteLine("准备建立连接工作已经完毕，等待对方远程登录。");
-                                    ShowStatusStrip(string.Format("来自远程计算机({0})的控制请求已经处理完毕，对方可以正常远程登录", localComputer.PeeredId));
+                                    ShowStatusStrip(string.Format("来自远程客户端({0})的控制请求已经处理完毕，对方可以正常远程登录", client.PeeredId));
+                                    flag = false;
                                 }
                                 else
                                 {
@@ -1056,18 +1090,15 @@ namespace MSRDPNatTraverseClient
                             }
                             else
                             {
-                                Debug.WriteLine("获取远程配对计算机id失败");
+                                Debug.WriteLine("获取远程配对客户端id失败");
                                 HideStatusStrip();
                             }
                         }
 
-                        if (ck)
+                        if (flag)
                         {
-                            if (await Client.GetTunnelStatusAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID))
-                            {
-                                CloseAllSSHReverseTunnels();
-                                HideStatusStrip();
-                            }
+                            HideStatusStrip();
+                            CloseAllSSHReverseTunnels();
                         }
                     }
                 }
@@ -1091,9 +1122,9 @@ namespace MSRDPNatTraverseClient
                     break;
                 }
 
-                if (localComputer.ID != -1)
+                if (client.ID != -1)
                 {
-                    if (await Client.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, localComputer.ID, 6))
+                    if (await MainFom.Protocol.PostKeepAliveCountAsync(proxyServer.Hostname, programConfig.ProxyServerListenPort, client.ID, 10))
                     {
                         UpdateRemoteMachineList();
                     }
@@ -1155,26 +1186,26 @@ namespace MSRDPNatTraverseClient
 
             if (programConfig != null)
             {
-                if (programConfig.Computer != null)
+                if (programConfig.Client != null)
                 {
-                    localComputer = programConfig.Computer;
+                    client = programConfig.Client;
                 }
                 else
                 {
-                    localComputer = new Computer.Computer();
-                    programConfig.Computer = localComputer;
+                    client = new Client.Client();
+                    programConfig.Client = client;
                 }
             }
             else
             {
                 // 做一些初始化的工作
-                localComputer = new Computer.Computer();
+                client = new Client.Client();
                 proxyServer = new ProxyServer.ProxyServer();
                 programConfig = new Config.Config(autoStartCheckBox.Checked,
-                    closeWithoutQuitCheckBox.Checked, localComputer, -1, 9000);
+                    closeWithoutQuitCheckBox.Checked, client, -1, 9000);
             }
             // 显示本机的有关信息
-            ShowComputerInfo(programConfig.Computer);
+            ShowClientInfo(programConfig.Client);
 
             // checkbox状态
             autoStartCheckBox.Checked = programConfig.AutoStartup;
@@ -1246,8 +1277,8 @@ namespace MSRDPNatTraverseClient
         /// <summary>
         /// 自动打开远程桌面应用
         /// 使用帮助：
-        /// /v 指定要连接的远程计算机
-        /// /span 将远程桌面的高度和宽度和本地计算机桌面进行匹配
+        /// /v 指定要连接的远程客户端
+        /// /span 将远程桌面的高度和宽度和本地客户端桌面进行匹配
         /// /control 运行控制会话
         /// </summary>
         /// <param name="host"></param>
