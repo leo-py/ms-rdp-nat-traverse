@@ -45,10 +45,10 @@
 2. 确保在Windows系统上安装了`.Net 4.5`及以上版本，双击即可运行软件；
 3. 在运行后，需要根据需要配置代理服务器以及本机的设置，然后才可以点击启动按钮启动相关服务。其他功能比较简单，很容易使用；
 4. 客户端运行截图：
-	* ![截图0](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win7_1.png)
-	* ![截图1](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win10_1.png)
-	* ![截图2](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win10_2.png)
-	* ![截图3](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win10_3.png)
+	* ![截图0](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win7_1.jpg)
+	* ![截图1](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win10_1.jpg)
+	* ![截图2](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win10_2.jpg)
+	* ![截图3](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/win10_3.jpg)
 
 
 ### Mac客户端软件
