@@ -19,7 +19,9 @@
 * 主要使用到的第三方库：[Newtonsoft.json](https://github.com/JamesNK/Newtonsoft.Json)，有关该库的`license`请参见`Licese`目录
 
 ## Mac客户端软件
-* 客户端基于`PyQt-5.5.1`使用`Python 3.5`开发，经过测试，基本功能正常
+* 客户端基于`PyQt-5.5.1`使用`Python 3.5`开发，经过测试，基本功能正常；
+* Mac客户端仅支持远程请求连接开放连接权限的主机；
+* Mac客户端不支持Windows下的被远程控制的功能，仅仅是为了配合Mac下的`Microsoft Remote Desktop`软件实现内网穿透访问其他远程计算机。
 
 ## 服务器软件
 * 服务器端采用了`Python 3`开发；
@@ -46,7 +48,9 @@
 ### Mac客户端软件
 1. 确保`PyQt-5`已经在Mac上安装成功；
 2. 确保`Python 3`在Mac上安装成功；
-3. 下载Mac版客户端代码，解压后在终端中进入解压后的目录，使用命令：`python3 App.py`即可运行。
+3. 下载Mac版客户端代码，解压后在终端中进入解压后的目录，使用命令：`python3 App.py`即可运行；
+4. 请确保下载了微软远程桌面软件(`Microsoft Remote Desktop`)，然后才能借助于客户端穿透内网访问其他远程计算机。
 
-## 其他
-* 尚待更新...
+## 许可
+* 本项目为个人业余项目，算不上专业，代码组织的也不是特别好，还在进一步学习改进中。所有本人编写的源码采用`MIT LICENSE`。
+* Enjoy~
