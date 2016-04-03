@@ -51,8 +51,8 @@
 3. 下载Mac版客户端代码，解压后在终端中进入解压后的目录，使用命令：`python3 App.py`即可运行；
 4. 请确保下载了微软远程桌面软件(`Microsoft Remote Desktop`)，然后才能借助于客户端穿透内网访问其他远程计算机；
 5. 客户端运行截图：
-	* [!截图1](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/mac_1.png)
-	* [!截图2](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/mac_2.png)
+	* ![截图1](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/mac_1.png)
+	* ![截图2](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/mac_2.png)
 
 ## 许可
 * 本项目为个人业余项目，算不上专业，代码组织的也不是特别好，还在进一步学习改进中。所有本人编写的源码采用`MIT LICENSE`。
