@@ -281,3 +281,5 @@ $RECYCLE.BIN/
 *.lnk
 
 *.pyc
+
+.gitignore
