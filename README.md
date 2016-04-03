@@ -60,6 +60,9 @@
 	* ![截图1](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/mac_1.png)
 	* ![截图2](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/ScreenShots/mac_2.png)
 
+## 贡献
+* [WashingtonLiu](https://github.com/WashingtonLiu)等人在Windows客户端测试中给予了很多帮助，并且反馈了很多重要的软件缺陷。
+
 ## 许可
 * 本项目为个人业余项目，算不上专业，代码组织的也不是特别好，还在进一步学习改进中。所有本人编写的源码采用[MIT LICENSE](https://raw.githubusercontent.com/ChrisLeeGit/MSRDPNatTraverse/master/License/LICENSE)。
 * Enjoy~
