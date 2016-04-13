@@ -467,8 +467,10 @@ class NatTraverseProtocol(Protocol):
         for item in CLIENT_GROUP.get_members().values():
             if isinstance(item, Client):
                 # 必须要过滤掉申请查询者的信息,返回其他在线用户
+                # 考虑到有到客户端并不支持被远程连接,所以这些客户端将不再会出现在列表上.
                 if item.id != content['id']:
-                    online_list[item.id] = item.name
+                    if item.peered_remote_id != item.id:
+                        online_list[item.id] = item.name
 
         return online_list
 
